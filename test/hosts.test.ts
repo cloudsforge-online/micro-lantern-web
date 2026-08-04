@@ -30,19 +30,22 @@ describe('the registry entry this bundle is', () => {
     assert.equal(lantern?.adminOnly, true)
   })
 
-  it('still says servesUi: false — the claim this repository makes false', () => {
-    // PINNED AS IT STANDS, NOT AS IT SHOULD BE. The registry offers `lantern` in the switcher
-    // (`inSwitcher: true`) while declaring that it serves no UI, so every operator who chose it
-    // got a 404 — driven through the real gateway:
-    // `https://lantern.cloudsforge.localtest.me/` answered 404 before this bundle existed.
+  it('says servesUi: true — the claim this repository made false', () => {
+    // PINNED AS IT STANDS. It stood at `false` until 2026-08-04: the registry offered `lantern` in
+    // the switcher while declaring it served no UI, so every operator who chose it got a 404 —
+    // driven through the real gateway, which answered 404 before this bundle existed.
     //
-    // micro-ui owns that file and this repository cannot edit it. When somebody flips the flag,
-    // this test goes red and the next reader is told why rather than finding a stale sentence.
+    // The tripwire worked. micro-ui flipped the flag once the bundle was deployed and MEASURED
+    // (200 text/html through the gateway with the estate CA), this test went red saying "update
+    // this test and the note in src/lib/hosts.ts together", and that is what this change is.
+    //
+    // Still pinned, now in the other direction, for the same reason: if the registry ever stops
+    // saying this bundle serves a page, the bundle's own tests should be the thing that notices.
     assert.equal(
       lantern?.servesUi,
-      false,
-      'servesUi has changed. If it is now true, this bundle is the reason — update this test and ' +
-        'the note in src/lib/hosts.ts together.',
+      true,
+      'servesUi has changed back. If it is now false, either this bundle stopped being deployed ' +
+        'or the registry is wrong — update this test and the note in src/lib/hosts.ts together.',
     )
     assert.equal(lantern?.inSwitcher, true)
   })

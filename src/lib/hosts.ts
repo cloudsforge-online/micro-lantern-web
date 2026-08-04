@@ -17,9 +17,12 @@
  * `lantern.<apex>` and `micro-lantern` serves `/v1/…` behind the same hostname — the arrangement
  * `trade.<apex>` already uses — so `apiBase()` is `''` and every request is relative.
  *
- * `servesUi: false` is now wrong, and this repository cannot fix it: micro-ui owns that file.
- * `test/hosts.test.ts` pins the claim as it stands, so the day it flips a test says so out loud
- * rather than the flag drifting into agreement unnoticed.
+ * `servesUi` said **false** until 2026-08-04, which was wrong the moment this bundle existed, and
+ * this repository could not fix it: micro-ui owns that file. `test/hosts.test.ts` pinned the claim
+ * as it stood, so the day it flipped a test would say so out loud rather than the flag drifting
+ * into agreement unnoticed. It flipped — after the bundle was deployed and the page MEASURED at
+ * `200 text/html` through the gateway, in that order, because the flag records a measurement and
+ * not an intention. The test is now pinned to `true` for the same reason, in reverse.
  */
 import { cloudsforgeHosts, type CloudsForgeHosts, type SurfaceKey } from '@cloudsforge/ui'
 
