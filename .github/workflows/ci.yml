@@ -1,0 +1,185 @@
+name: CI
+
+# ────────────────────────────────────────────────────────────────────────────────────────────────
+# THIS IS THE FILE EVERY NEW FRONTEND INHERITS. Copy the repository, change two values in the `ci`
+# job, and the new app is already covered by every estate-wide rule.
+#
+# The header of the file this replaces said it was "temporary … replaced by a call to
+# cloudsforge-online/micro-org/.github/workflows/web-ci.yml", and named the reason it had not
+# happened: @cloudsforge/ui is unpublished and consumed as `link:../ui/packages/ui`, while the
+# reusable workflow did a single checkout. Every one of the estate's thirteen frontends says the
+# same thing in the same words, and the count of repositories actually calling web-ci.yml was zero.
+#
+# THAT WAS NEVER REALLY A WAIT FOR PUBLICATION. It was one missing checkout: service-ci.yml had
+# already solved the identical problem for the service repositories by putting the app and its
+# sibling side by side and installing the sibling first. web-ci.yml now does the same — app in
+# `app/`, micro-ui beside it, and `uipkg` passed to the image build as a named context — so this
+# repository, and the twelve frontends cut from it, can stop carrying 200-900 lines of CI each.
+#
+# WHAT TO CHANGE WHEN YOU COPY THIS:
+#   * `app:`              the new frontend's registry name.
+#   * `deep-link-path:`   a route the app REALLY has, which must survive a hard refresh. Leave it
+#                         empty rather than inventing one — the unknown-path 404 check always runs,
+#                         and requiring 200 from a path the app does not own is the opposite of the
+#                         honest-404 rule this template's nginx.conf exists to hold.
+#
+# The two jobs below are NOT duplicates of the reusable workflow. `rules` checks properties of this
+# repository's nginx.conf and entry point that no shared workflow can know about; `served-headers`
+# PROBES the running image for headers the config only appears to promise. Both are stricter than
+# their nearest equivalent upstream, so both stay.
+# ────────────────────────────────────────────────────────────────────────────────────────────────
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: cloudsforge-online/micro-org/.github/workflows/web-ci.yml@main
+    with:
+      app: web-template
+      # `/settings` is a real route: src/app.tsx declares it and nginx.conf gives it its own
+      # location block. That pairing is the whole point of the input — a route the app owns must
+      # survive a hard refresh, and a route it does not own must still 404.
+      deep-link-path: /settings
+    secrets:
+      # micro-ui is private; without a contents:read token the sibling checkout 404s, the
+      # `link:../ui/packages/ui` specifier installs as a dangling symlink, and Typecheck cannot
+      # resolve a single @cloudsforge/ui export.
+      estate_token: ${{ secrets.ESTATE_READ_TOKEN }}
+    permissions:
+      contents: read
+      packages: read
+
+  rules:
+    # The estate rules that are cheaper to grep than to review. Each one has been broken at least
+    # once by a change that looked correct in isolation.
+    name: Estate rules this repository adds
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: No build-time configuration
+        # Broader than the reusable workflow's version, deliberately. That one matches
+        # `import.meta.env.VITE_*`; this matches `import.meta.env` at all and bare `VITE_`, and it
+        # reads index.html as well as src/. It is the same rule as
+        # test/no-build-time-config.test.ts, checked again here so it fails even if somebody
+        # deletes the test along with the line it forbids.
+        run: |
+          if grep -rn --include='*.ts' --include='*.tsx' --include='*.html' \
+               -e 'import\.meta\.env' -e 'VITE_' src index.html; then
+            echo "::error::this bundle must read no build-time environment; hosts come from cloudsforgeHosts() at runtime"
+            exit 1
+          fi
+          echo "ok: no build-time environment"
+
+      - name: No hard-coded CloudsForge hostname
+        # A literal hostname is a second, unversioned copy of the surface registry, and the copy
+        # is the one that will be wrong.
+        run: |
+          if grep -rn --include='*.ts' --include='*.tsx' 'cloudsforge\.online' src; then
+            echo "::error::resolve hosts through cloudsforgeHosts() rather than naming them"
+            exit 1
+          fi
+          echo "ok: no hard-coded hostname"
+
+      - name: The SPA fallback keeps its 404
+        # `try_files ... /index.html` in the catch-all location is how an app starts answering 200
+        # for every address that does not exist.
+        #
+        # Comments are stripped before the check. nginx.conf's own header quotes the forbidden
+        # directive while explaining why it is forbidden, so the unstripped grep matched the
+        # documentation and this step failed on a pristine template — every frontend cut from it
+        # would have started life with a red pipeline over a line of prose. A guard that fires on
+        # its own rationale trains people to disable the guard.
+        run: |
+          sed 's/#.*//' nginx.conf > /tmp/nginx.effective
+          if grep -nE 'try_files\s+\$uri\s+(\$uri/\s+)?/index\.html' /tmp/nginx.effective; then
+            echo "::error::unknown paths must 404; serve the shell through error_page 404 /index.html"
+            exit 1
+          fi
+          grep -q 'error_page 404 /index.html' /tmp/nginx.effective
+          echo "ok: the SPA fallback keeps its 404"
+
+      - name: The auth callback is redeemed before the app renders
+        run: |
+          grep -q 'bootstrapSession' src/main.tsx
+          echo "ok: the session is bootstrapped before render"
+
+  served-headers:
+    # PROBED, NOT READ, and this is the job that most deserves to survive the migration. Both
+    # defects it guards were invisible in the config and obvious in a response: nginx's
+    # `add_header` is all-or-nothing per level, so a location that sets Cache-Control silently
+    # loses every inherited security header; and `try_files` is a file lookup rather than an
+    # internal redirect, so serving /index.html from `location = /` never enters
+    # `location = /index.html`. Reading the file suggests both are fine. Curling it does not.
+    #
+    # The reusable workflow's image job checks that the app answers 200, that an unknown path 404s
+    # and that the deep link survives a refresh. It does not read a single header, so none of this
+    # is duplicated there.
+    name: The served headers are the ones the config appears to promise
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with: { path: web-template }
+      # Temporary: the sibling the `link:` dependency and the Dockerfile's `uipkg` context resolve
+      # against, until @cloudsforge/ui is published.
+      - uses: actions/checkout@v4
+        with:
+          repository: cloudsforge-online/micro-ui
+          path: ui
+          token: ${{ secrets.ESTATE_READ_TOKEN }}
+
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the image
+        uses: docker/build-push-action@v6
+        with:
+          context: web-template
+          build-contexts: uipkg=ui
+          build-args: RELEASE=${{ github.sha }}
+          push: false
+          load: true
+          tags: web-template:headers
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Probe the running image
+        working-directory: web-template
+        run: |
+          set -uo pipefail
+          docker run -d --rm --name wt-ci -p 127.0.0.1:8099:8080 web-template:headers
+          for _ in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:8099/ && break; sleep 1; done
+
+          fail=0
+          check() { # url, header, expected-substring, label
+            got=$(curl -sI "$1" | tr -d '\r' | grep -i "^$2:" | cut -d' ' -f2- || true)
+            case "${got:-}" in
+              "") echo "::error::$4 is missing $2"; fail=1 ;;
+              *"$3"*) echo "  ok   $4: $2: $got" ;;
+              *) echo "::error::$4 is missing or wrong for $2 (got '${got:-nothing}', wanted '$3')"; fail=1 ;;
+            esac
+          }
+
+          asset=$(curl -s http://127.0.0.1:8099/ | grep -oE '/assets/[^"]+\.js' | head -1)
+          for h in X-Content-Type-Options X-Frame-Options Referrer-Policy; do
+            check "http://127.0.0.1:8099/" "$h" "" "the shell"
+            [ -n "$asset" ] && check "http://127.0.0.1:8099$asset" "$h" "" "a hashed asset"
+          done
+          check "http://127.0.0.1:8099/" Cache-Control "no-store" "the shell"
+          [ -n "$asset" ] && check "http://127.0.0.1:8099$asset" Cache-Control "immutable" "a hashed asset"
+
+          # And the honest 404 the whole config exists to preserve.
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/nope/not/a/route)
+          [ "$code" = "404" ] || { echo "::error::an unknown path returned $code, not 404"; fail=1; }
+
+          docker rm -f wt-ci >/dev/null 2>&1 || true
+          exit $fail
