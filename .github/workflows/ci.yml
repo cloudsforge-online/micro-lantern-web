@@ -106,8 +106,20 @@ jobs:
         # either that decision being undone by hand or the design system being forked in place.
         # test/styles.test.ts is the same rule; this is here so deleting the test does not delete
         # the rule with it.
+        #
+        # COMMENTS ARE STRIPPED FIRST, and that is not tidiness — it is the difference between a
+        # guard and a nuisance. The header of src/styles.css QUOTES `#f4a63c` twice while
+        # explaining why this surface refuses to use it, so the unstripped grep matched the
+        # rationale and failed on a pristine repository. test/styles.test.ts already strips them
+        # (its `CODE` constant); this step had the weaker form and went red on the first push.
+        #
+        # It is the identical defect web-template records one step above, where the SPA-fallback
+        # check greps nginx.conf AFTER `sed 's/#.*//'` because that file's own header quotes the
+        # directive it forbids. A guard that fires on its own explanation trains people to
+        # disable the guard.
         run: |
-          if grep -nE '#[0-9a-fA-F]{3,8}\b' src/styles.css; then
+          perl -0777 -pe 's{/\*.*?\*/}{}gs' src/styles.css > /tmp/styles.effective
+          if grep -nE '#[0-9a-fA-F]{3,8}\b' /tmp/styles.effective; then
             echo "::error::src/styles.css must consume var(--cf-*) tokens, never hex literals"
             exit 1
           fi
@@ -154,11 +166,20 @@ jobs:
         with: { path: lantern-web }
       # Temporary: the sibling the `link:` dependency and the Dockerfile's `uipkg` context resolve
       # against, until @cloudsforge/ui is published.
+      #
+      # `|| github.token` IS LOAD-BEARING FOR A NEW REPOSITORY, and its absence is what made this
+      # job fail on the very first push here. `ESTATE_READ_TOKEN` is not set on a repository that
+      # has just been created, so the expression rendered the EMPTY STRING — and checkout with an
+      # empty token does not fall back to the job token, it authenticates as nobody and fails.
+      # micro-ui is public, so the job token is sufficient; the secret stays first so a later
+      # re-privatising of that repository still works. This mirrors the fallback the reusable
+      # workflow already had for the same checkout (`secrets.estate_token || github.token`,
+      # micro-org/.github/workflows/web-ci.yml) — the bespoke copy here simply lacked it.
       - uses: actions/checkout@v4
         with:
           repository: cloudsforge-online/micro-ui
           path: ui
-          token: ${{ secrets.ESTATE_READ_TOKEN }}
+          token: ${{ secrets.ESTATE_READ_TOKEN || github.token }}
 
       - uses: docker/setup-buildx-action@v3
       - name: Build the image
