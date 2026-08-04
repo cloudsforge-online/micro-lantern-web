@@ -34,6 +34,34 @@
   --cf-accent-glow: var(--cf-ember-glow);
 }
 
+/* ───────────────────────────────────────────────────────────────────────────────────────────────
+ * THE PAGE ITSELF, WHICH THIS FILE DID NOT STYLE.
+ *
+ * This block was ABSENT until 2026-08-04, and its absence was the defect the header above warns
+ * about, in this very file: the tokens were delivered and never consumed. `--cf-bg` resolved to its
+ * declared dark value on the live page while `getComputedStyle(document.body)` reported no
+ * background colour at all, so the console rendered dark chrome and a dark footer around a WHITE
+ * page with near-black body text on it. Measured in headless Chromium through the estate gateway;
+ * every other frontend — web-template, trade-web, hub-web, admin-web, foresight-admin-web,
+ * status-web — carries this exact block, and `micro-lantern-web` and `micro-beacon-web` were the
+ * only two without it. (The measured values are not quoted: a hex in a comment is a value the next
+ * reader pastes into a rule, and this file's whole point is that it contains none.)
+ *
+ * It was invisible to every guard that existed. `test/styles.test.ts` asked whether this file used
+ * hex literals, not whether it styled anything; `footer-audit` reads the computed background of the
+ * FOOTER, which was correct throughout because the shared component brings its own. A rule that
+ * checks the colours you did write cannot notice the one you did not, which is why the assertion
+ * added beside this asks for the declaration BY NAME.
+ * ─────────────────────────────────────────────────────────────────────────────────────────────── */
+body {
+  margin: 0;
+  background: var(--cf-bg);
+  color: var(--cf-fg);
+  font-family: var(--cf-font-sans);
+  /* The bar is dark on every surface; the page follows the substrate. */
+  color-scheme: dark;
+}
+
 /* ---- layout ------------------------------------------------------------------------------- */
 
 .ln-skip {

@@ -4,22 +4,23 @@
  * The bar is `CloudsForgeBar` from @cloudsforge/ui and is never reimplemented. It is passed
  * `PRODUCT` — 'lantern' — so the switcher resolves this surface's own entry and marks it current.
  *
- * ── This is the surface the switcher has been pointing at nothing ─────────────────────────────
+ * ── This is the surface the switcher used to point at nothing ─────────────────────────────────
  *
- * `lantern` carries `inSwitcher: true` and `servesUi: false` at the same time
- * (`ui/packages/ui/src/surfaces.ts:386-387`). Every operator who opened the switcher was offered
- * "Logs & errors" and taken to a 404, because `micro-lantern` serves JSON and no HTML. This bundle
- * is what that entry now reaches. Nothing in this file needs to change when `servesUi` is
- * corrected; it is recorded here because the current value makes this shell look redundant and it
- * is the opposite.
+ * `lantern` carried `inSwitcher: true` and `servesUi: false` at the same time until 2026-08-04.
+ * Every operator who opened the switcher was offered "Logs & errors" and taken to a 404, because
+ * `micro-lantern` serves JSON and no HTML. This bundle is what that entry reaches. The registry now
+ * agrees — `servesUi: true` (`ui/packages/ui/src/surfaces.ts:418`), `adminOnly: true` (`:420`) —
+ * and that flag is why the footer below is not optional: every OTHER surface in the estate derives
+ * its own footer from the same registry, so all sixteen now offer a link TO here, and until this
+ * commit the page they arrived at had no footer and no way back.
  *
  * ── No mark, and no glyph drawn by this app ───────────────────────────────────────────────────
  *
- * `markId: null` (`surfaces.ts:385`). The registry's `✷` belongs to the switcher entry, which the
+ * `markId: null` (`surfaces.ts:392`). The registry's `✷` belongs to the switcher entry, which the
  * bar draws. Reproducing it in the page chrome would be this app inventing a mark for a surface
  * that was deliberately not given one.
  */
-import { CloudsForgeBar } from '@cloudsforge/ui'
+import { CloudsForgeBar, CloudsForgeFooter } from '@cloudsforge/ui'
 import { NavLink, Outlet } from 'react-router-dom'
 import { PRODUCT } from '../lib/hosts.ts'
 import { NAV } from '../lib/routes.ts'
@@ -82,6 +83,27 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
         )}
         <Outlet />
       </main>
+
+      {/*
+        The company footer, from @cloudsforge/ui, and NEVER a local copy. Every link in it is
+        derived from the surface registry, so a new product appears here without this file changing
+        — which is the whole reason a shared component exists rather than a seventeenth hand-rolled
+        footer. `footer-audit` in micro-ui checks for `.cf-foot` specifically, not for any
+        `<footer>`, precisely so a local imitation cannot be mistaken for adoption.
+
+        IT IS OUTSIDE THE GATE ON PURPOSE. `app.tsx` wraps each PAGE in `<Gate>`, not the shell, so
+        a signed-out operator gets `SignInWall` inside `<main>` with this footer underneath it. That
+        is the state that matters most here: this surface is `adminOnly`, so the reader who has not
+        signed in is exactly the reader who most needs a way back out to the rest of the estate. A
+        footer rendered only after sign-in would have left the reported defect in place for the only
+        visitor who could still see it.
+
+        `current` is PRODUCT — this surface has its own registry row and its own hostname, so the
+        identity line names Lantern whether or not the reader may see the Lantern LINK. `account`
+        decides only that: with no session the four operator surfaces (this one included) are not
+        listed at all, which is the same rule the switcher follows.
+      */}
+      <CloudsForgeFooter current={PRODUCT} account={account} />
     </>
   )
 }
