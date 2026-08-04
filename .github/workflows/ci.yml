@@ -1,27 +1,13 @@
 name: CI
 
 # ────────────────────────────────────────────────────────────────────────────────────────────────
-# THIS IS THE FILE EVERY NEW FRONTEND INHERITS. Copy the repository, change two values in the `ci`
-# job, and the new app is already covered by every estate-wide rule.
+# Inherited from micro-web-template, with the two values in the `ci` job set for this repository.
 #
-# The header of the file this replaces said it was "temporary … replaced by a call to
-# cloudsforge-online/micro-org/.github/workflows/web-ci.yml", and named the reason it had not
-# happened: @cloudsforge/ui is unpublished and consumed as `link:../ui/packages/ui`, while the
-# reusable workflow did a single checkout. Every one of the estate's thirteen frontends says the
-# same thing in the same words, and the count of repositories actually calling web-ci.yml was zero.
-#
-# THAT WAS NEVER REALLY A WAIT FOR PUBLICATION. It was one missing checkout: service-ci.yml had
-# already solved the identical problem for the service repositories by putting the app and its
-# sibling side by side and installing the sibling first. web-ci.yml now does the same — app in
-# `app/`, micro-ui beside it, and `uipkg` passed to the image build as a named context — so this
-# repository, and the twelve frontends cut from it, can stop carrying 200-900 lines of CI each.
-#
-# WHAT TO CHANGE WHEN YOU COPY THIS:
-#   * `app:`              the new frontend's registry name.
-#   * `deep-link-path:`   a route the app REALLY has, which must survive a hard refresh. Leave it
-#                         empty rather than inventing one — the unknown-path 404 check always runs,
-#                         and requiring 200 from a path the app does not own is the opposite of the
-#                         honest-404 rule this template's nginx.conf exists to hold.
+# `app: lantern-web` and `deep-link-path: /browser`. The deep link is a route this app REALLY has —
+# src/lib/routes.ts declares it and nginx.conf gives it a location block in the same alternation —
+# because the input exists to prove that pairing: a route the app owns must survive a hard refresh,
+# and a route it does not own must still 404. Naming a path that does not exist would invert the
+# honest-404 rule the nginx.conf exists to hold.
 #
 # The two jobs below are NOT duplicates of the reusable workflow. `rules` checks properties of this
 # repository's nginx.conf and entry point that no shared workflow can know about; `served-headers`
@@ -42,11 +28,11 @@ jobs:
   ci:
     uses: cloudsforge-online/micro-org/.github/workflows/web-ci.yml@main
     with:
-      app: web-template
-      # `/settings` is a real route: src/app.tsx declares it and nginx.conf gives it its own
-      # location block. That pairing is the whole point of the input — a route the app owns must
-      # survive a hard refresh, and a route it does not own must still 404.
-      deep-link-path: /settings
+      app: lantern-web
+      # `/browser` is a real route: src/lib/routes.ts declares it, src/app.tsx mounts it and
+      # nginx.conf enumerates it. It is chosen over `/` deliberately — `/` would pass through
+      # `location = /` and prove nothing about the alternation that carries the other three.
+      deep-link-path: /browser
     secrets:
       # micro-ui is private; without a contents:read token the sibling checkout 404s, the
       # `link:../ui/packages/ui` specifier installs as a dangling symlink, and Typecheck cannot
@@ -113,6 +99,41 @@ jobs:
           grep -q 'bootstrapSession' src/main.tsx
           echo "ok: the session is bootstrapped before render"
 
+      - name: No hex literal in this surface's stylesheet
+        # Lantern's registry accent is byte-identical to --cf-warn, and this surface deliberately
+        # re-points its accent to the ember ramp through var() indirection
+        # (ui/packages/ui/src/tokens.css:594-596). A hex literal anywhere in src/styles.css is
+        # either that decision being undone by hand or the design system being forked in place.
+        # test/styles.test.ts is the same rule; this is here so deleting the test does not delete
+        # the rule with it.
+        run: |
+          if grep -nE '#[0-9a-fA-F]{3,8}\b' src/styles.css; then
+            echo "::error::src/styles.css must consume var(--cf-*) tokens, never hex literals"
+            exit 1
+          fi
+          echo "ok: no hex literals in src/styles.css"
+
+      - name: The break-glass token never ships in the bundle
+        # micro-lantern accepts a static token header before it consults identity
+        # (lantern/src/server.ts:617-624). That secret is for a curl. In a JavaScript bundle it
+        # would be a shared credential in every browser cache the page ever loaded into.
+        #
+        # Comment lines are stripped first. This repository documents the header's existence at
+        # length, on purpose — the next writer needs to know why it is absent — and a guard that
+        # fires on its own rationale is a guard people learn to disable. Same lesson as
+        # test/harness-honesty.test.ts: check the code, not the description of it.
+        run: |
+          fail=0
+          for f in $(find src -name '*.ts' -o -name '*.tsx') index.html; do
+            if sed -e 's://.*::' -e '/^[[:space:]]*\*/d' -e '/^[[:space:]]*\/\*/d' \
+                   -e '/^[[:space:]]*<!--/d' "$f" | grep -n 'x-lantern-token'; then
+              echo "::error::$f sends the break-glass token from the browser"
+              fail=1
+            fi
+          done
+          [ "$fail" = 0 ] || exit 1
+          echo "ok: no break-glass token sent from the bundle"
+
   served-headers:
     # PROBED, NOT READ, and this is the job that most deserves to survive the migration. Both
     # defects it guards were invisible in the config and obvious in a response: nginx's
@@ -130,7 +151,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-        with: { path: web-template }
+        with: { path: lantern-web }
       # Temporary: the sibling the `link:` dependency and the Dockerfile's `uipkg` context resolve
       # against, until @cloudsforge/ui is published.
       - uses: actions/checkout@v4
@@ -143,20 +164,20 @@ jobs:
       - name: Build the image
         uses: docker/build-push-action@v6
         with:
-          context: web-template
+          context: lantern-web
           build-contexts: uipkg=ui
           build-args: RELEASE=${{ github.sha }}
           push: false
           load: true
-          tags: web-template:headers
+          tags: lantern-web:headers
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
       - name: Probe the running image
-        working-directory: web-template
+        working-directory: lantern-web
         run: |
           set -uo pipefail
-          docker run -d --rm --name wt-ci -p 127.0.0.1:8099:8080 web-template:headers
+          docker run -d --rm --name lw-ci -p 127.0.0.1:8099:8080 lantern-web:headers
           for _ in $(seq 1 30); do curl -fsS -o /dev/null http://127.0.0.1:8099/ && break; sleep 1; done
 
           fail=0
@@ -181,5 +202,5 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8099/nope/not/a/route)
           [ "$code" = "404" ] || { echo "::error::an unknown path returned $code, not 404"; fail=1; }
 
-          docker rm -f wt-ci >/dev/null 2>&1 || true
+          docker rm -f lw-ci >/dev/null 2>&1 || true
           exit $fail

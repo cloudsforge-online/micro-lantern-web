@@ -1,21 +1,23 @@
 /**
- * The states a screen can be in, as visibly different things.
+ * The states a panel can be in, as visibly different things.
  *
- * They are separated because collapsing any two of them destroys information the reader needs:
+ * They are separated because collapsing any two of them destroys information the operator needs:
  *
  *   LOADING   — we do not know yet. Waiting is the correct action.
- *   EMPTY     — the query answered, with nothing. Nothing is wrong; there is something to DO.
- *   MISSING   — the chain, or this indexer's record of it, does not contain the thing asked for.
- *               That is an ANSWER, and on this surface it is often the most useful one.
+ *   EMPTY     — the query answered, with nothing. Nothing is wrong.
+ *   REFUSED   — the service declined. There is something to DO, and it is not "try again".
  *   FAILED    — the query did not answer. Retrying may work. The request id is what support needs.
  *
- * A spinner that never resolves, an empty list that was actually a timeout, and a "no results"
- * that was actually a missing scope are the three failures this file exists to prevent. This
- * surface adds a fourth: a 404 that means "no such transaction" rendered identically to a 404 that
- * means "this client asked for a path the service does not serve". `Missing` takes the code, so
- * the two cannot look alike.
+ * A spinner that never resolves, an empty list that was actually a timeout, and a refusal rendered
+ * as "no results" are the three failures this file exists to prevent.
  *
- * There were five of these. The fifth is gone, and the note where it stood says why.
+ * ── EMPTY IS THE COMMON CASE ON THIS SURFACE, AND IT IS GOOD NEWS ─────────────────────────────
+ *
+ * `GET /v1/issues?limit=3` on this estate answers `{"issues":[]}` right now. That is a healthy
+ * estate, not a broken panel — so the empty state has to READ as an answer. A blank area, a bare
+ * dash or a panel that simply does not appear all read as "this failed to draw", and an operator
+ * who cannot tell "no open issues" from "the issues panel is broken" has no reason to trust the
+ * one they are shown next.
  */
 import type { ReactNode } from 'react'
 import type { ErrorNotice } from '../lib/api.ts'
@@ -55,94 +57,121 @@ export function Empty({
 }
 
 /**
- * The thing asked for is not there, and that is a fact about the chain rather than a fault.
+ * The service declined, and the reader can act on that.
  *
  * ══════════════════════════════════════════════════════════════════════════════════════════════
- * THE CODE IS SHOWN, AND IT IS NOT DECORATION.
+ * `explorer-web`, WHICH THIS FILE WAS COPIED FROM, DELETED THIS COMPONENT. IT IS BACK ON PURPOSE.
  *
- * `micro-indexer` answers 404 for two entirely different reasons and distinguishes them by CODE,
- * never by status (`indexer/src/server.ts:468-478`):
+ * There it was right to delete: `micro-indexer` opened its reads, so no visitor could be refused
+ * and a component explaining a restriction nobody was under would be believed anyway.
  *
- *   `transaction_not_found` / `block_not_found` / `token_not_found`
- *       this service asked and the answer is no. A real answer.
- *   `unknown_chain` / `unknown_network`
- *       the path names a chain this estate does not run (`indexer/src/server.ts:667-670`).
- *   `not_found`
- *       the ROUTER's. This client asked for a path the service does not serve — which is a bug in
- *       this bundle and says nothing whatever about the chain.
+ * `micro-lantern` refuses every anonymous read (`authorise`, `lantern/src/server.ts:623-636`) and
+ * `lantern` is `adminOnly` in the registry (`surfaces.ts:388`). The two refusals are different
+ * events with different next actions, and the CODE is what separates them
+ * (`lantern/src/server.ts:354`, `:358`):
  *
- * `micro-market` collapsed the first and the last and reported "the on-chain escrow is not
- * confirmed yet" for every activation; `micro-mint` collapsed them the other way and rendered "not
- * yet indexed" on every project page, permanently. Both passed all their own tests. So this
- * component takes the code, prints it, and words the last case as OUR fault rather than the
- * chain's.
+ *   401 `unauthenticated`  no credential, or one Lantern could not verify. Sign in.
+ *   403 `forbidden`        a credential that is not enough. Signing in again will not help, and
+ *                          offering it would send an operator round a loop they cannot leave.
+ *
+ * So the button below is shown for 401 and withheld for 403.
  * ══════════════════════════════════════════════════════════════════════════════════════════════
  */
-export function Missing({
-  title,
-  hint,
+export function Refused({
   notice,
+  onSignIn,
 }: {
-  title: string
-  hint: string
-  notice?: ErrorNotice | undefined
+  notice: ErrorNotice
+  onSignIn?: (() => void) | undefined
 }) {
-  const ourFault = notice?.code === 'not_found'
+  const canSignIn = notice.status === 401
   return (
-    <div className="wt-state wt-state--missing" role="status">
+    <div className="wt-state wt-state--refused" role="status">
       <span className="wt-state__icon" aria-hidden="true">
-        ○
+        ⊘
       </span>
-      <p className="wt-state__title">{ourFault ? 'This page asked for the wrong address' : title}</p>
-      <p className="wt-state__hint">
-        {ourFault
-          ? 'The chain index does not serve the path this page requested. That is a defect in this ' +
-            'explorer and says nothing about whether the thing you looked for exists.'
-          : hint}
+      <p className="wt-state__title">
+        {canSignIn ? 'Lantern needs a credential for this' : 'Lantern will not serve this to you'}
       </p>
-      {notice?.code && (
-        <p className="wt-state__meta">
-          The index answered <code className="cf-num ex-code">{notice.code}</code>
-          {notice.requestId && (
-            <>
-              {' '}
-              · request <code className="cf-num wt-reqid">{notice.requestId}</code>
-            </>
-          )}
-        </p>
+      <p className="wt-state__hint">
+        {canSignIn
+          ? 'The request was made without a credential Lantern could verify. Signing in again ' +
+            'issues a new one.'
+          : 'Your session is valid and this estate does not consider it an operator credential. ' +
+            'Signing in again would issue the same one, so there is no button here.'}
+      </p>
+      <p className="wt-state__meta">
+        Lantern answered <code className="cf-num ln-code">{notice.code ?? notice.status}</code>
+        {notice.requestId && (
+          <>
+            {' '}
+            · request <code className="cf-num wt-reqid">{notice.requestId}</code>
+          </>
+        )}
+      </p>
+      {canSignIn && onSignIn && (
+        <div className="wt-state__action">
+          <button type="button" className="cf-btn" onClick={onSignIn}>
+            Sign in
+          </button>
+        </div>
       )}
     </div>
   )
 }
 
 /**
- * A failure, with the request id on screen.
+ * A failure, with the figure that is missing named, and the request id on screen.
  *
- * The id is what the reader quotes and what finds their exact request across every service at
- * once. It is rendered in the monospace token and made selectable on its own line, because it is
- * going to be read aloud down a phone line or pasted into a support form.
+ * `what` is required and it is the point of the component. "That did not load" on an error console
+ * is the console committing the offence it exists to detect — a panel that cannot say which figure
+ * is absent leaves an operator unable to tell a missing panel from an empty one. So every caller
+ * names its read.
+ *
+ * The request id is what the operator quotes and what finds the exact request across every service
+ * at once. It is rendered in the monospace token and made selectable, because it is going to be
+ * pasted into the box on the `/request` page in this very app.
  */
 export function Failed({
   notice,
+  what,
   onRetry,
-  title = 'That did not load',
 }: {
   notice: ErrorNotice
+  /** The thing that is missing, as a noun phrase: "the open issues", "the browser samples". */
+  what: string
   onRetry?: (() => void) | undefined
-  title?: string | undefined
 }) {
   return (
     <div className="wt-state wt-state--failed" role="alert">
       <span className="wt-state__icon" aria-hidden="true">
         ■
       </span>
-      <p className="wt-state__title">{title}</p>
+      <p className="wt-state__title">Could not load {what}</p>
       <p className="wt-state__hint">{notice.message}</p>
-      {notice.requestId && (
-        <p className="wt-state__meta">
-          Quote this to support: <code className="cf-num wt-reqid">{notice.requestId}</code>
-        </p>
-      )}
+      <p className="wt-state__meta">
+        {notice.code ? (
+          <>
+            Lantern answered <code className="cf-num ln-code">{notice.code}</code>
+          </>
+        ) : notice.status !== undefined ? (
+          <>
+            HTTP <code className="cf-num ln-code">{notice.status}</code>
+          </>
+        ) : (
+          // No status and no code means the request never got an answer at all — the fetch threw.
+          // Saying so is the difference between "Lantern is refusing" and "nothing replied".
+          <>The request did not reach Lantern</>
+        )}
+        {notice.requestId ? (
+          <>
+            {' '}
+            · request <code className="cf-num wt-reqid">{notice.requestId}</code>
+          </>
+        ) : (
+          <> · no request id — Lantern never answered, so there is none to quote</>
+        )}
+      </p>
       {onRetry && (
         <div className="wt-state__action">
           <button type="button" className="cf-btn" onClick={onRetry}>
@@ -154,22 +183,38 @@ export function Failed({
   )
 }
 
-/* ────────────────────────────────────────────────────────────────────────────────────────────────
- * THERE WAS A FIFTH STATE HERE, `Refused`, AND IT HAS BEEN DELETED.
+/**
+ * The whole-surface sign-in panel, shown INSTEAD of the pages when there is no session.
  *
- * It existed because every `micro-indexer` read demanded a service principal holding `indexer:read`
- * or an admin user, so an anonymous visitor got 401 and an ordinary customer got 403, and a public
- * block explorer could render nothing to the public. This surface said which refusal had happened
- * and where it was decided, rather than showing an empty page or offering a sign-in that would not
- * have helped.
- *
- * `micro-indexer` opened the seven reads (`authoriseRead`, `indexer/src/server.ts:792-801`), and
- * `test/indexer.test.ts` went red the same day — which is exactly what it was written to do. A
- * component that explains a restriction nobody is subject to is worse than one that never existed,
- * because a reader believes it. So it is gone, and so are the standing notice in the shell, the
- * `refused` resource state, and the `served` predicate the wording branched on.
- *
- * A 401 or a 403 from the chain index now lands in `Failed`, which is correct: this bundle presents
- * no credential (`publicRead` in src/lib/indexer.ts), so nothing it sends can lack one, and an auth
- * status arriving anyway is a fault in the service or in something in front of it.
- * ──────────────────────────────────────────────────────────────────────────────────────────────── */
+ * Not a per-panel state: the gate in `app.tsx` renders this and mounts nothing that fetches, so a
+ * signed-out visitor never sees four 401s arranged in a grid. See the header of `lib/auth.tsx` for
+ * why this surface has a gate at all when `explorer-web` deliberately has none.
+ */
+export function SignInWall({ onSignIn }: { onSignIn: () => void }) {
+  return (
+    <section className="ln-wall" aria-labelledby="wall-title">
+      <h1 className="ln-wall__title" id="wall-title">
+        Lantern is an operator surface
+      </h1>
+      <p className="ln-wall__lede">
+        This console reads the estate's errors, log events and browser samples. Every one of those
+        reads is credentialled — Lantern refuses an anonymous request outright — and the surface
+        registry marks it <code className="cf-num ln-code">adminOnly</code>.
+      </p>
+      <p className="ln-wall__lede">
+        Nothing has been requested on your behalf. You are not looking at a page that failed; you
+        are looking at a page that has not asked Lantern anything, because asking without a
+        credential can only produce a screen of refusals.
+      </p>
+      <div className="ln-wall__action">
+        <button type="button" className="cf-btn cf-btn--primary" onClick={onSignIn}>
+          Sign in
+        </button>
+      </div>
+      <p className="ln-wall__note">
+        Signing in returns you to this page. If Lantern still declines afterwards, it will say so
+        with its own code and a request id — that is a decision the service makes, not this page.
+      </p>
+    </section>
+  )
+}

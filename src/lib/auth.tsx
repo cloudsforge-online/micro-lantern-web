@@ -1,55 +1,48 @@
 /**
- * Session state for the tree. There is deliberately no gate in front of any route.
+ * Session state for the tree, and the gate every page here sits behind.
  *
  * ══════════════════════════════════════════════════════════════════════════════════════════════
- * WHY THIS FILE HAS NO `ProtectedRoute`, WHEN EVERY OTHER FRONTEND IN THE ESTATE HAS ONE
+ * WHY THIS FILE HAS A GATE, WHEN `explorer-web` — WHICH IT WAS COPIED FROM — DELIBERATELY HAS NONE
  *
- * A gate exists to spare a customer a screen made entirely of 401s by sending them somewhere that
- * fixes it. **Nothing on this surface can produce one.** Every `micro-indexer` route this app
- * calls is anonymous — `authoriseRead` returns `null` for a caller with no token and lets the
- * handler run (`indexer/src/server.ts:792-801`, the branch at `:794`) — and every call is issued
- * with `auth: false` (`publicRead` in `src/lib/indexer.ts`). A gate here would demand a session
- * for public chain facts and would be the defect this repository was built around, arriving from
- * the client's side: `docs/ecosystem/15-monetisation-model.md:50` — "A public chain whose explorer
- * is paywalled is not a public chain."
+ * `explorer-web/src/lib/auth.tsx` states its position at length and it is correct for that
+ * surface: every `micro-indexer` route it calls is anonymous, so a gate there would demand a
+ * session for public chain facts and would be the defect that repository was built around,
+ * arriving from the client's side.
  *
- * There was a second argument for the absence, and it is now history worth keeping: the reads used
- * to require `indexer:read` or an admin, so a gate would have sent a customer through an SSO round
- * trip to arrive at a 403. That is fixed upstream, the machinery that explained it has been
- * deleted, and the gate stays absent for the stronger reason. `test/auth.test.ts` and
- * `test/routes.test.ts` both assert it, so restoring the estate's usual shape is a decision
- * somebody has to argue for rather than a reflex.
+ * **Every read here is the opposite.** `micro-lantern`'s `authorise`
+ * (`lantern/src/server.ts:623-636`) accepts the break-glass `x-lantern-token`, or an identity JWT
+ * whose principal is a user, or a service token holding the read scope — and throws
+ * `TokenError('no credential presented')` otherwise. The browser holds only the second of those.
+ * And `lantern` is `adminOnly: true` in the registry (`ui/packages/ui/src/surfaces.ts:388`), which
+ * is the estate saying out loud that this surface is not for customers.
  *
- * The session is still read, and it is used for exactly one thing: the shared company bar — the
- * reader's handle, and the `adminOnly` entries the switcher shows an operator. **It is never
- * consulted before a request and never changes what a page renders.** A client that predicts an
- * authorisation decision is a client that will eventually disagree with the service making it.
+ * So a signed-out visitor gets ONE screen: a panel that says what this is and offers `signIn()`.
+ * The gate's real job is not to hide anything — the service is what refuses, and the service is
+ * the only thing that can — it is to STOP THE REQUESTS BEING SENT. Without it, the first paint of
+ * this console for a signed-out operator is four panels of 401, which reads as "Lantern is
+ * broken" rather than "you are not signed in", and is exactly the screen a gate exists to spare
+ * somebody.
+ *
+ * What the gate must NOT do is decide who is an operator. It branches on "is there a session at
+ * all", never on `roles`. A client that predicts an authorisation decision is a client that will
+ * eventually disagree with the service making it — so a signed-in reader whom Lantern refuses sees
+ * the service's own 401/403, with its code and its request id, via the `refused` state in
+ * `lib/resource.ts`.
  * ══════════════════════════════════════════════════════════════════════════════════════════════
  *
- * ── The `/auth/me` shape, re-read for this repository ─────────────────────────────────────────
+ * ── The `/auth/me` shape ──────────────────────────────────────────────────────────────────────
  *
  * Identity answers `{ user: {...}, session: {...}, organisations: [...] }` — the profile is
- * **NESTED under `user`**. The route is `GET /auth/me` in `identity/src/server.ts` and the body is built by
- * `toPublicUser` at `identity/src/users.ts:52-63`. Both citations were opened and read against the
- * source for this repository rather than carried over from a sibling.
+ * **NESTED under `user`**. The route is `GET /auth/me` in `identity/src/server.ts` and the body is
+ * built by `toPublicUser` at `identity/src/users.ts:52-63`.
  *
  * That shape is worth stating because the estate got it wrong at the root: the web template
  * declared `interface Me { handle?, roles? }` and read both fields off the TOP level, where they
  * are not. Four frontends inherited it, `roles` was then always null, `isAdmin` in the shared
  * company bar was always false, and the switcher hid every `adminOnly` entry from every signed-in
- * operator — which is still the consequence here, and the only one.
- *
- * **It is fixed upstream**, and this file follows the template. `micro-web-template/src/lib/auth.tsx:26`
- * declares the nested shape and `:98-99` read `me?.user?.handle` / `me?.user?.roles`. The template
- * accepts ONLY the nested shape and its own comment gives the reason: "Tolerating the flat one as a
- * fallback would encode a response identity does not send, and the next reader would not be able to
- * tell which is real." There is no flat fallback here, and `test/auth.test.ts` pins its absence, so
- * the choice is a decision rather than an omission.
- *
- * On this surface the roles are now cosmetic, and that is a change worth writing down. They used to
- * be the difference between a page that shows blocks and a page that explains why it cannot, back
- * when the index served only an admin. It serves everybody, so `roles` reaches the shared bar and
- * stops there — no panel, no route and no request consults it.
+ * operator — **including this one**, which is the entry an operator most needs to find. There is no
+ * flat fallback here and `test/auth.test.ts` pins its absence: tolerating it would encode a
+ * response identity does not send, and the next reader could not tell which is real.
  */
 import {
   createContext,
@@ -96,19 +89,6 @@ export function readReader(body: unknown): Reader {
   }
 }
 
-/* ────────────────────────────────────────────────────────────────────────────────────────────────
- * `servedByIndexer(reader)` USED TO LIVE HERE, AND IT HAS BEEN DELETED.
- *
- * It answered "would the chain index serve this reader" by asking whether they held the `admin`
- * role, because `authorise` accepted a user principal only when `isAdmin`. Its one caller was the
- * standing notice in the shell, which used it to choose between two wordings of the same apology.
- *
- * The reads are anonymous now (`indexer/src/server.ts:792-801`), so the predicate has no true
- * answer other than "yes", the notice is gone, and a helper that can only return one value is a
- * helper somebody eventually reads as meaningful. Nothing in this bundle asks who a reader is
- * before making a request.
- * ──────────────────────────────────────────────────────────────────────────────────────────────── */
-
 export type SessionStatus = 'loading' | 'anonymous' | 'signedIn'
 
 export interface Session {
@@ -138,8 +118,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!hasSession()) return
     let live = true
-    // The identity call is the one request that is allowed to fail quietly: an unreachable account
-    // service must not take a public reference surface down with it.
+    // An unreachable identity service must not turn a held session into a signed-out screen: the
+    // tokens are still there, Lantern will still accept them, and the panels below can still
+    // answer. So the failure branch keeps `signedIn` if the tokens survive, and only the handle in
+    // the bar is lost.
     nimbus<unknown>('/auth/me')
       .then((profile) => {
         if (!live) return

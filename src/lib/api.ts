@@ -8,18 +8,23 @@
  * them present a token that has just been superseded, and the user is signed out while holding a
  * valid session.
  *
- * ── One thing is different on THIS surface, and it is not a detail ─────────────────────────────
+ * ── One thing is different on THIS surface, and it is the opposite of the explorer's ──────────
  *
- * **A session has nothing to do with reading the chain here.** Every `micro-indexer` route this
- * bundle calls is anonymous (`authoriseRead`, `indexer/src/server.ts:792-801`), and every one of
- * them is issued with `auth: false` — see `publicRead` in `src/lib/indexer.ts`. The token
- * machinery below exists for exactly one caller, `/auth/me` on Nimbus, which puts the reader's
- * handle in the shared bar and nothing else.
+ * `micro-lantern` REFUSES an anonymous read. `authorise` (`lantern/src/server.ts:623-636`) checks
+ * the break-glass `x-lantern-token` first and then falls through to an identity JWT; with no
+ * credential at all it throws `TokenError('no credential presented')` and the route answers 401.
+ * Every one of the four reads this bundle makes goes through it.
  *
- * So the rule for this file is narrow and worth stating: **a bearer must never travel to the chain
- * index.** Presenting one there would be verified rather than ignored, and an expired one would
- * turn a page that needs no session into a 401 — a public explorer that has quietly made itself
- * depend on a credential.
+ * So the bearer machinery below is not decoration here, and the rule is the mirror image of
+ * `explorer-web/src/lib/api.ts`, which this file was copied from: there a bearer must NEVER travel
+ * to the API, because presenting one to an anonymous route turns a public page into a 401. Here a
+ * bearer is the only thing that makes the API answer, and the single-flight refresh is what keeps
+ * four panels mounting at once from spending four rotations of one refresh token.
+ *
+ * The break-glass token is deliberately absent from this bundle. It is a shared secret that would
+ * be readable in devtools by anyone the page ever loaded for, and a static credential in a
+ * JavaScript bundle is a static credential in every browser cache on the estate. It is for a
+ * curl, and `micro-deploy`'s gateway config is where it lives.
  */
 import { consumeAuthCallback, signInRedirect, signOutRedirect } from '@cloudsforge/ui'
 import { APP_NAME, apiBase, hosts, pageOrigin } from './hosts.ts'
@@ -172,9 +177,10 @@ export interface ErrorNotice {
    * The service's error CODE, carried through so a screen can branch on it.
    *
    * The template drops it, and dropping it is how `micro-market` and `micro-mint` each rendered a
-   * router 404 as a fact about a chain. `micro-indexer` distinguishes "no such transaction" from
-   * "no such route" by code alone and says so at `indexer/src/server.ts:475-477` — the status is
-   * 404 either way.
+   * router 404 as a fact about a chain. It matters here for the same shape of reason:
+   * `micro-lantern` answers 401 with code `unauthenticated` and 403 with code `forbidden`
+   * (`lantern/src/server.ts:354` and `:358`), and an operator needs to know which of "sign in" and
+   * "you are signed in and still not allowed" they are looking at.
    */
   code: string | undefined
   /** The HTTP status, for the one case where the code is absent and the status is all there is. */
@@ -287,18 +293,17 @@ export interface RequestOptions {
   /**
    * Extra request headers. **Nothing on this surface sets one, and that is a fact about the API.**
    *
-   * `micro-indexer` reads exactly one request header on a domain route — `authorization`, in
-   * `authoriseRead` (`indexer/src/server.ts:793`) and `authorise` (`:808`) — plus `x-request-id`
-   * and `host` in the server frame (`indexer/src/server.ts:202`, `:198`). There is no
-   * `Idempotency-Key` anywhere in that repository, and this bundle sends no request that would
-   * need one: every route it calls is a GET, and the two POSTs the indexer serves are declined
-   * (see `src/lib/indexer.ts`).
+   * `micro-lantern` reads exactly three request headers on a read route: `x-lantern-token` and
+   * `authorization` in `authorise` (`lantern/src/server.ts:617-636`), plus `x-request-id` in the
+   * server frame (`lantern/src/server.ts:199`). There is no `Idempotency-Key` anywhere in that
+   * repository and this bundle sends no write that would need one — every route it calls is a GET,
+   * and the service's only writes are the ingest paths a collector posts to.
    *
    * The parameter is kept rather than deleted because it is the template's and because deleting it
    * would make the next writer add it back without the note. Copying `trade-web`'s client here
-   * would have sent an `Idempotency-Key` the indexer never reads; copying this one to `trade` would
-   * fail every write with a **400** (`trade/src/server.ts:840-848`). Two clients that look alike
-   * and are not interchangeable is exactly the shape this estate keeps shipping.
+   * would have sent an `Idempotency-Key` this service never reads; copying this one to `trade`
+   * would fail every write with a **400** (`trade/src/server.ts:840-848`). Two clients that look
+   * alike and are not interchangeable is exactly the shape this estate keeps shipping.
    *
    * `authorization` and `content-type` are set by this function AFTER these are spread, so a
    * caller cannot accidentally drop the bearer token by passing a header map of its own.
@@ -392,12 +397,13 @@ async function request<T>(base: string, path: string, opts: RequestOptions = {})
     // and expiring one that never existed dispatches `cf:auth-expired`, which signs a user out of
     // a session they never had.
     //
-    // This surface REPORTED that defect to micro-web-template, and the template has since fixed it
-    // (`web-template/src/lib/api.ts:344`, `if (res.status === 401 && auth && hasSession())`). This
-    // line is the template's, not a fork of it, and `test/api.test.ts` checks the two agree. Note
-    // the guard is no longer what keeps the explorer quiet — the chain reads pass `auth: false` and
-    // never reach this branch at all — but it is still right for `/auth/me`, and a client that is
-    // only correct because of where it happens to be called is a client waiting to be moved.
+    // `explorer-web` reported that defect to micro-web-template and the template has since fixed
+    // it (`web-template/src/lib/api.ts:344`, `if (res.status === 401 && auth && hasSession())`).
+    // This line is the template's, not a fork of it, and `test/api.test.ts` checks the two agree.
+    // Unlike on the explorer, the guard is load-bearing HERE: every read this bundle makes is
+    // credentialled, so a 401 arriving without a session is the service saying "authenticate",
+    // and expiring a session that never existed would dispatch `cf:auth-expired` at a visitor who
+    // has not signed in — which is how a sign-in button turns into a loop.
     if (res.status === 401 && auth && hasSession()) expireSession()
     throw new ApiError(res.status, message, code, requestId)
   }

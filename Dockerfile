@@ -7,12 +7,12 @@
 # THE IMAGE CARRIES NO ENVIRONMENT. It is built once, tagged once, and the same tag is promoted
 # from staging to production; the hosts it talks to are resolved in the browser from the address
 # the page was served on. There is deliberately no build arg for an API URL, and adding one would
-# undo the property this template exists to keep.
+# undo the property the honest-404 rule exists to keep.
 
 # The named context is the unpublished @cloudsforge/ui workspace, mirroring the `file:` specifier
 # in package.json. It disappears when the package is published; see "The one temporary thing" in
 # the README.
-#   docker build -t web-template --build-context uipkg=../ui .
+#   docker build -t lantern-web --build-context uipkg=../ui .
 
 FROM node:22-alpine AS build
 WORKDIR /app
