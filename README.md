@@ -29,9 +29,12 @@ $ curl -sI --cacert deploy/gateway/certs/ca.crt https://lantern.cloudsforge.loca
 HTTP/2 404
 ```
 
-This bundle is the page that entry already claimed. `test/hosts.test.ts` pins `servesUi: false` **as
-it currently stands**, so the day micro-ui corrects it a test goes red and the next reader is told
-why, rather than finding a sentence here that has quietly become false.
+This bundle is the page that entry already claimed, **and micro-ui has since been corrected**:
+`ui/packages/ui/src/surfaces.ts:405` now reads `servesUi: true`, and `test/hosts.test.ts:45` pins it
+at `true` — so a regression goes red rather than leaving a sentence here that has quietly become
+false. Measured live on 2026-08-05: `https://lantern.cloudsforge.online/` → `200 text/html`. On
+testnet the same surface is `https://lantern-testnet.cloudsforge.online/` — testnet hostnames are
+single-label `<surface>-testnet.`, never `<surface>.testnet.`.
 
 ---
 
