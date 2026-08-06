@@ -26,7 +26,7 @@ describe('the registry entry this bundle is', () => {
 
   it('is adminOnly, which is why this repository has a gate', () => {
     // `explorer-web` has no gate because its reads are anonymous. This flag, plus `authorise` in
-    // `lantern/src/server.ts:623-636`, is the whole reason this one does.
+    // `lantern/src/server.ts`, is the whole reason this one does.
     assert.equal(lantern?.adminOnly, true)
   })
 
@@ -51,7 +51,7 @@ describe('the registry entry this bundle is', () => {
   })
 
   it('carries the accent that is also --cf-warn, which is why styles.css re-points it', () => {
-    // The byte-identical pair: surfaces.ts:381 and tokens.css:111. If micro-ui ever gives Lantern
+    // The byte-identical pair: surfaces.ts and tokens.css. If micro-ui ever gives Lantern
     // a distinct accent, the ember override in src/styles.css becomes a decision to re-argue
     // rather than a rule to follow — so this pins the fact the override cites.
     assert.equal(lantern?.accent, '#f4a63c')

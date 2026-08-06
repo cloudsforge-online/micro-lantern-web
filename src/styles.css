@@ -11,25 +11,25 @@
 /* ───────────────────────────────────────────────────────────────────────────────────────────────
  * THE ACCENT IS RE-POINTED TO EMBER, AND THE REASON IS THE DESIGN SYSTEM'S OWN.
  *
- * `ui/packages/ui/src/tokens.css:930-932` says, verbatim:
+ * `ui/packages/ui/src/tokens.css` says, verbatim:
  *
  *     "Note that Lantern's own UI forces ember for its chrome, because amber is also its WARN
  *      severity and a surface must not wear the colour of one of the states it reports."
  *
- * That is not a preference. Lantern's registry accent is `#f4a63c` (`surfaces.ts:377`) and
- * `--cf-warn` is `#f4a63c` (`tokens.css:357`) — the same six digits. A console whose buttons,
+ * That is not a preference. Lantern's registry accent is `#f4a63c` (`surfaces.ts`) and
+ * `--cf-warn` is `#f4a63c` (`tokens.css`) — the same six digits. A console whose buttons,
  * links and focus rings are painted in its own WARN colour teaches an operator to stop reading
  * amber as a severity, on the one screen where amber is a severity.
  *
  * index.html still names the real key `lantern`, so `[data-cf-product='lantern']` — a DECLARED
- * block at tokens.css:933-941 — is what applies, and nothing falls through in silence. These five
+ * block at tokens.css — is what applies, and nothing falls through in silence. These five
  * declarations then move the accent to the ember ramp. They are var() indirection, not literals:
- * the ember values live in tokens.css:167-171 and are never copied here.
+ * the ember values live in tokens.css and are never copied here.
  *
  * ── THE FIVE LINE NUMBERS ABOVE WERE ALL WRONG UNTIL 2026-08-06 ───────────────────────────────
  *
- * Not by a line or two: `tokens.css:594-596` landed in the middle of a paragraph about which four
- * hues survive deuteranopia in a scatter plot, and `tokens.css:111` in the motion tokens. The
+ * Not by a line or two: `tokens.css` landed in the middle of a paragraph about which four
+ * hues survive deuteranopia in a scatter plot, and `tokens.css` in the motion tokens. The
  * quotation was still accurate — it is quoted verbatim above and was re-read at 930-932 — but
  * every pointer to it had rotted while @cloudsforge/ui grew a light scheme, a severity text ramp
  * and eleven product blocks between this file and the thing it cites.
@@ -238,12 +238,12 @@ body {
  * @cloudsforge/ui 1.1 gave each severity level a `-text` step for the reason `--cf-accent-text`
  * exists: `--cf-critical` is #d2543a and measures 3.38:1 on the tightest ground this system
  * composes text on, which is below the AA floor for text and above the 3:1 floor a border needs.
- * tokens.css:331-339 names the two surfaces that shipped the word "failed" below that floor, and
- * tokens.css:361 carries the derived step and its measurement.
+ * tokens.css names the two surfaces that shipped the word "failed" below that floor, and
+ * tokens.css carries the derived step and its measurement.
  *
  * The badges below are the only place on this console where a severity is the COLOUR OF A WORD,
  * so they are the only place the distinction bites. `--cf-danger` and `--cf-success` are kept as
- * written: tokens.css:389-391 declares them as ALIASES OF THE TEXT STEPS — `--cf-danger` IS
+ * written: tokens.css declares them as ALIASES OF THE TEXT STEPS — `--cf-danger` IS
  * `var(--cf-critical-text)`, read at the line — precisely so that existing `color:` uses became
  * compliant without every repository being edited, and rewriting them here would be churn that
  * changes no pixel. `--cf-warn` is not such an alias; it is the plain step, so it is the one name
@@ -252,8 +252,8 @@ body {
  * ── AND THE WARN MOVE CHANGES NOTHING TODAY, WHICH IS THE POINT OF MAKING IT ──────────────────
  *
  * Stated plainly rather than left for somebody to discover and revert as pointless: `--cf-warn`
- * and `--cf-warn-text` are the SAME VALUE in both schemes — #f4a63c dark (tokens.css:357-358, at
- * 6.91:1) and #83571c light (tokens.css:1129-1130, at 4.63:1). Amber is the one level that clears
+ * and `--cf-warn-text` are the SAME VALUE in both schemes — #f4a63c dark (tokens.css, at
+ * 6.91:1) and #83571c light (tokens.css, at 4.63:1). Amber is the one level that clears
  * the text floor unaided, so this edit repaints not a single pixel.
  *
  * What it changes is which token carries the contract. `--cf-warn-text` is the name the design
@@ -264,14 +264,14 @@ body {
  * moving it after a shared-token change has silently put the word "warn" under the floor.
  *
  * The BORDERS in this file are left exactly as they are, and that is the same decision rather than
- * an oversight: tokens.css:341-345 says in terms that `--cf-danger` as a border "keeps clearing
+ * an oversight: tokens.css says in terms that `--cf-danger` as a border "keeps clearing
  * the 3:1 non-text floor it needs". `.ln-note--warn`, `.wt-state--refused`, `.wt-state--failed`
  * and `.ln-filter__input[aria-invalid]` are all borders and all stay plain. Rewriting them to the
  * text steps would move four colours to prove a point the tokens already make, and would make the
  * borders lighter than the system intends.
  *
  * Nothing here relies on colour alone in any case: `components/tone.tsx` ships a glyph and a word
- * beside every one of these, which is the rule tokens.css:347-352 states for the same tokens.
+ * beside every one of these, which is the rule tokens.css states for the same tokens.
  */
 .ln-badge--fatal {
   color: var(--cf-danger);

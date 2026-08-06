@@ -10,10 +10,10 @@
  * arriving from the client's side.
  *
  * **Every read here is the opposite.** `micro-lantern`'s `authorise`
- * (`lantern/src/server.ts:623-636`) accepts the break-glass `x-lantern-token`, or an identity JWT
+ * (`lantern/src/server.ts`) accepts the break-glass `x-lantern-token`, or an identity JWT
  * whose principal is a user, or a service token holding the read scope — and throws
  * `TokenError('no credential presented')` otherwise. The browser holds only the second of those.
- * And `lantern` is `adminOnly: true` in the registry (`ui/packages/ui/src/surfaces.ts:407`), which
+ * And `lantern` is `adminOnly: true` in the registry (`ui/packages/ui/src/surfaces.ts`), which
  * is the estate saying out loud that this surface is not for customers.
  *
  * So a signed-out visitor gets ONE screen: a panel that says what this is and offers `signIn()`.
@@ -34,7 +34,7 @@
  *
  * Identity answers `{ user: {...}, session: {...}, organisations: [...] }` — the profile is
  * **NESTED under `user`**. The route is `GET /auth/me` in `identity/src/server.ts` and the body is
- * built by `toPublicUser` at `identity/src/users.ts:52-63`.
+ * built by `toPublicUser` at `identity/src/users.ts`.
  *
  * That shape is worth stating because the estate got it wrong at the root: the web template
  * declared `interface Me { handle?, roles? }` and read both fields off the TOP level, where they

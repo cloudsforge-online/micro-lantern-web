@@ -16,7 +16,7 @@ const AUTH = readFileSync(new URL('../src/lib/auth.tsx', import.meta.url), 'utf8
 
 describe('readReader', () => {
   it('reads the NESTED shape identity actually sends', () => {
-    // `toPublicUser`, identity/src/users.ts:52-63.
+    // `toPublicUser`, identity/src/users.ts.
     const reader = readReader({ user: { handle: 'ada', roles: ['admin'] } })
     assert.equal(reader.handle, 'ada')
     assert.deepEqual(reader.roles, ['admin'])
@@ -52,8 +52,8 @@ describe('readReader', () => {
 
 describe('the gate', () => {
   it('exists, unlike explorer-web, and mounts the pages only inside itself', () => {
-    // Every read here is credentialled (`authorise`, lantern/src/server.ts:623-636) and the
-    // surface is adminOnly (surfaces.ts:388). Without a gate the first paint for a signed-out
+    // Every read here is credentialled (`authorise`, lantern/src/server.ts) and the
+    // surface is adminOnly (surfaces.ts). Without a gate the first paint for a signed-out
     // operator is four panels of 401, which reads as "Lantern is broken".
     assert.match(APP, /function Gate\(/)
     for (const page of ['IssuesPage', 'EventsPage', 'BrowserPage', 'RequestPage']) {
@@ -90,7 +90,7 @@ describe('the gate', () => {
     // The argument must stay next to the code, and it must name the file it is disagreeing with,
     // or the next person to copy explorer-web here will delete the gate as surplus.
     assert.match(AUTH, /explorer-web\/src\/lib\/auth\.tsx/)
-    assert.match(AUTH, /lantern\/src\/server\.ts:623-636/)
+    assert.match(AUTH, /lantern\/src\/server\.ts/)
   })
 
   it('the 404 page is deliberately NOT gated', () => {
@@ -104,7 +104,7 @@ describe('the gate', () => {
 describe('the break-glass token', () => {
   it('is never SENT by any executable line in the bundle', () => {
     // `authorise` checks a static token header before it consults identity
-    // (lantern/src/server.ts:617-624). In a JavaScript bundle that is a shared credential in every
+    // (lantern/src/server.ts). In a JavaScript bundle that is a shared credential in every
     // browser cache the page ever loaded into. It is for a curl and for micro-deploy.
     //
     // Checked against comment-stripped source, and the distinction is the same one

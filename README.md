@@ -20,7 +20,7 @@ Design authority: [`ecosystem/13-operational-model.md`](https://github.com/cloud
 
 **The surface registry has been offering every operator a page that 404s.**
 
-`ui/packages/ui/src/surfaces.ts:375-389` declares `lantern` with `inSwitcher: true` and
+`ui/packages/ui/src/surfaces.ts` declares `lantern` with `inSwitcher: true` and
 `servesUi: false` at the same time. `micro-lantern` serves JSON and no HTML, so the switcher entry
 "Logs & errors" led nowhere. Driven through the real gateway before a line of this was written:
 
@@ -30,7 +30,7 @@ HTTP/2 404
 ```
 
 This bundle is the page that entry already claimed, **and micro-ui has since been corrected**:
-`ui/packages/ui/src/surfaces.ts:405` now reads `servesUi: true`, and `test/hosts.test.ts:45` pins it
+`ui/packages/ui/src/surfaces.ts` now reads `servesUi: true`, and `test/hosts.test.ts` pins it
 at `true` — so a regression goes red rather than leaving a sentence here that has quietly become
 false. Measured live on 2026-08-05: `https://lantern.cloudsforge.online/` → `200 text/html`. On
 testnet the same surface is `https://lantern-testnet.cloudsforge.online/` — testnet hostnames are
@@ -47,8 +47,8 @@ single-label `<surface>-testnet.`, never `<surface>.testnet.`.
 | `/browser` | `GET /v1/rum` | Browser samples, **including the `attributes` bag** |
 | `/request` | `GET /v1/requests/:requestId` | The one search box the service is shaped around |
 
-`/request` is the important one. `13-operational-model.md:73-78`, quoted in
-`lantern/src/reads.ts:6-8`: *"a user quotes an id from an error screen and an operator pastes it
+`/request` is the important one. `13-operational-model.md`, quoted in
+`lantern/src/reads.ts`: *"a user quotes an id from an error screen and an operator pastes it
 into one search box"*. Every failure state in this console prints the request id Lantern gave it,
 and that page is where the id is spent — the loop closes inside the repository.
 
@@ -57,7 +57,7 @@ and that page is where the id is spent — the loop closes inside the repository
 ## `/v1/rum` is being read here for the first time
 
 `rum_samples` was **write-only for the whole life of the service**: inserted by the ingest sink,
-deleted by retention, and selected by nothing (`lantern/src/reads.ts:128-144`). A browser error
+deleted by retention, and selected by nothing (`lantern/src/reads.ts`). A browser error
 could be collected perfectly, stored perfectly, and remain invisible to every human in the company
 — which is worse than not collecting it, because it looks like coverage.
 
@@ -88,10 +88,10 @@ Two things follow, and both are visible on the page:
 `explorer-web` has no `ProtectedRoute` and argues the case at length: its reads are anonymous, so a
 gate there would demand a session for public chain facts.
 
-Every read here is the opposite. `authorise` (`lantern/src/server.ts:623-636`) accepts the
+Every read here is the opposite. `authorise` (`lantern/src/server.ts`) accepts the
 break-glass token, or an identity JWT whose principal is a user, or a service token holding the read
 scope — and throws with no credential at all. `lantern` is `adminOnly: true`
-(`surfaces.ts:388`). So:
+(`surfaces.ts`). So:
 
 * **Signed out** → one panel explaining what this surface is, and a `signIn()` button. **No request
   is issued at all**, so nobody is shown a screen made of 401s that reads as "Lantern is down".
@@ -110,14 +110,14 @@ JavaScript it would sit in every browser cache the page ever loaded into. It is 
 
 ## The accent is ember, and that is the design system's instruction
 
-`ui/packages/ui/src/tokens.css:594-596`, verbatim:
+`ui/packages/ui/src/tokens.css`, verbatim:
 
 > Note that Lantern's own UI forces ember for its chrome, because amber is also its WARN severity
 > and a surface must not wear the colour of one of the states it reports.
 
-Lantern's registry accent is `#f4a63c` (`surfaces.ts:381`) and `--cf-warn` is `#f4a63c`
-(`tokens.css:111`) — the same six digits. `index.html` still names the real key
-(`data-cf-product="lantern"`, a declared block at `tokens.css:596-602`, so nothing falls through in
+Lantern's registry accent is `#f4a63c` (`surfaces.ts`) and `--cf-warn` is `#f4a63c`
+(`tokens.css`) — the same six digits. `index.html` still names the real key
+(`data-cf-product="lantern"`, a declared block at `tokens.css`, so nothing falls through in
 silence), and `src/styles.css` re-points the five accent tokens to the ember ramp through `var()`
 indirection. **There is not one hex literal in this repository's CSS**, and both a test and a CI
 step say so.

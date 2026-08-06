@@ -10,8 +10,8 @@
  *
  * `explorer-web`, which most of this repository was copied from, has no gate and says at length
  * why: its reads are anonymous. Every read here is credentialled
- * (`authorise`, `lantern/src/server.ts:623-636`) and the surface is `adminOnly`
- * (`ui/packages/ui/src/surfaces.ts:407`), so the opposite decision is the correct one — and the
+ * (`authorise`, `lantern/src/server.ts`) and the surface is `adminOnly`
+ * (`ui/packages/ui/src/surfaces.ts`), so the opposite decision is the correct one — and the
  * full argument lives in the header of `lib/auth.tsx` rather than being half-stated in both.
  *
  * What matters at this level is the SHAPE of the gate. With no session, `SignInWall` renders and

@@ -5,10 +5,10 @@
   because a page that paints before the attributes land flashes the default ember and then
   changes colour.
 
-  `lantern` is the real registry key (ui/packages/ui/src/surfaces.ts:371) and it has a DECLARED
-  block at ui/packages/ui/src/tokens.css:933-941, so nothing here falls through to the company
+  `lantern` is the real registry key (ui/packages/ui/src/surfaces.ts) and it has a DECLARED
+  block at ui/packages/ui/src/tokens.css, so nothing here falls through to the company
   default in silence. That block carries amber — and this surface then re-points the five accent
-  tokens to the ember ramp in src/styles.css, for the reason tokens.css:930-932 states verbatim.
+  tokens to the ember ramp in src/styles.css, for the reason tokens.css states verbatim.
   Naming some other key would have been the lazy way to get ember, and it would have been a lie
   about which surface this is.
 
@@ -66,7 +66,7 @@
       absence and helpfully fix it.
 
       Two facts about this console decide it. It is `adminOnly: true`
-      (ui/packages/ui/src/surfaces.ts:407), so nobody who is not an operator is on it at all; and
+      (ui/packages/ui/src/surfaces.ts), so nobody who is not an operator is on it at all; and
       its request-lookup route carries the identifier in the QUERY STRING — `/request?id=…`, which
       `src/lib/routes.ts` explains at length and `nginx.conf` depends on. GA4's default
       `page_location` parameter is the full URL, query string included. So a single automatic
@@ -77,7 +77,7 @@
 
       The consent primitives are still wired below, and that is not an inconsistency: `main.tsx`
       calls `initAnalytics()` and `components/shell.tsx` renders `<CookieBanner />`, both of which
-      do NOTHING without an ID. `analyticsId()` (ui/packages/ui/src/consent.ts:161) returns null
+      do NOTHING without an ID. `analyticsId()` (ui/packages/ui/src/consent.ts) returns null
       when the meta tag is absent, `initAnalytics()` then only primes Consent Mode with every
       category denied — two pushes onto a plain array, no request, no cookie — and the banner
       returns null rather than asking permission for something that will never happen. The wiring
@@ -90,7 +90,7 @@
       that may inject it is the Accept button — see the header of `@cloudsforge/ui/consent`.
     -->
     <!--
-      Lantern carries `markId: null` in the registry (surfaces.ts:379), so no mark and no wordmark
+      Lantern carries `markId: null` in the registry (surfaces.ts), so no mark and no wordmark
       appear anywhere in this bundle. These are the company chrome, which a separate hostname needs
       regardless: a browser tab and a shared link inherit nothing.
     -->
@@ -113,13 +113,13 @@
     <meta name="twitter:card" content="summary_large_image" />
     <!--
       An operator console has nothing a search engine should hold. `adminOnly: true`
-      (ui/packages/ui/src/surfaces.ts:407) is the authorisation fact; this is the indexing one, and
+      (ui/packages/ui/src/surfaces.ts) is the authorisation fact; this is the indexing one, and
       they are not the same statement.
 
       THIS STRING IS NOT A DECISION TAKEN HERE — it is a COPY of one taken in the registry, and
       the copy exists only because a crawler that does not execute JavaScript never sees the other
-      two. `robotsDirective` (ui/packages/ui/src/seo.ts:139-142) reads `servesUi` and `adminOnly`
-      and nothing else; Lantern is `servesUi: true, adminOnly: true` (surfaces.ts:405,407), so it
+      two. `robotsDirective` (ui/packages/ui/src/seo.ts) reads `servesUi` and `adminOnly`
+      and nothing else; Lantern is `servesUi: true, adminOnly: true` (surfaces.ts,407), so it
       resolves to exactly `noindex, nofollow`. The same fact is stated three times on this surface,
       for three readers who cannot see each other's copy:
 

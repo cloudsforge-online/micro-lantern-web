@@ -12,9 +12,9 @@
  *
  * ── NOTHING HERE WAS DECIDED IN THIS REPOSITORY ───────────────────────────────────────────────
  *
- * `robotsDirective` (ui/packages/ui/src/seo.ts:139-142) reads `servesUi` and `adminOnly` and
- * nothing else. Lantern's registry row carries `servesUi: true` (surfaces.ts:405) and
- * `adminOnly: true` (surfaces.ts:407), so it resolves to `noindex, nofollow`, and the three places
+ * `robotsDirective` (ui/packages/ui/src/seo.ts) reads `servesUi` and `adminOnly` and
+ * nothing else. Lantern's registry row carries `servesUi: true` (surfaces.ts) and
+ * `adminOnly: true` (surfaces.ts), so it resolves to `noindex, nofollow`, and the three places
  * this surface states that — index.html's static tag, `DocumentMeta`'s runtime one, and
  * nginx.conf's /robots.txt — are three COPIES of one registry fact rather than three opinions.
  *
@@ -190,7 +190,7 @@ describe('the sitemap this surface deliberately does not have', () => {
     /*
      * The other half, and the one this repository cannot enforce from here: `site` is the only
      * surface that may compose sibling addresses, because it is the only one whose `$host` is the
-     * apex. `SITEMAP_SURFACES` (ui/packages/ui/src/sitemap.ts:47-49) filters `adminOnly` out, so
+     * apex. `SITEMAP_SURFACES` (ui/packages/ui/src/sitemap.ts) filters `adminOnly` out, so
      * `site` never lists this console.
      *
      * Asserted from THIS repository because this is where the consequence lands. A change to that
@@ -224,7 +224,7 @@ describe('the $cf_env map, which decides nothing here and is kept anyway', () =>
 
   it('recognises exactly the labels the registry reserves', () => {
     /*
-     * ENV_LABELS (ui/packages/ui/src/surfaces.ts:1065-1071) is the estate's single list —
+     * ENV_LABELS (ui/packages/ui/src/surfaces.ts) is the estate's single list —
      * `deploy/scripts/check-apex-prefix.py` reads the same export. An alternation that had drifted
      * from it would either miss an environment or refuse a surface, and both fail silently.
      */

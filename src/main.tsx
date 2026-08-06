@@ -45,7 +45,7 @@ initObs()
  * ON THIS SURFACE IT LOADS NOTHING, EVER, AND IS CALLED ANYWAY. `index.html` carries no
  * `cf-analytics` meta tag and says at length why not: `/request?id=…` puts a live CloudsForge
  * request id in the query string, and GA4's `page_location` would ship it to Google on every
- * lookup. `analyticsId()` (ui/packages/ui/src/consent.ts:161) therefore returns null, and this
+ * lookup. `analyticsId()` (ui/packages/ui/src/consent.ts) therefore returns null, and this
  * call reduces to installing the denied default. Keeping it is what makes the decision live in
  * ONE place — the shell — rather than being half-expressed here as a missing line that reads like
  * an omission.

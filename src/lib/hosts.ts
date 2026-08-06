@@ -7,7 +7,7 @@
  *
  * ── This bundle IS the surface it reads, and the registry already promised it ───────────────────
  *
- * `lantern` is an entry that already exists (`ui/packages/ui/src/surfaces.ts:375-389`), with
+ * `lantern` is an entry that already exists (`ui/packages/ui/src/surfaces.ts`), with
  * `subdomain: 'lantern'`, `inSwitcher: true`, `adminOnly: true` — and **`servesUi: false`**. The
  * operator switcher has therefore been offering every admin an entry that 404s, because
  * `micro-lantern` serves an API and no HTML at all. Driven through the real gateway before this
@@ -29,7 +29,7 @@ import { cloudsforgeHosts, type CloudsForgeHosts, type SurfaceKey } from '@cloud
 /**
  * The surface this application IS.
  *
- * `markId: null` (`surfaces.ts:385`), so nothing in this bundle renders a mark or a wordmark and
+ * `markId: null` (`surfaces.ts`), so nothing in this bundle renders a mark or a wordmark and
  * no chrome here is designed around one. The glyph the registry gives it — `✷` — belongs to the
  * shared bar's switcher entry, not to this app's own chrome.
  */
@@ -38,8 +38,9 @@ export const PRODUCT: SurfaceKey = 'lantern'
 /**
  * The accent block `<html data-cf-product>` names.
  *
- * `lantern` HAS a declared block (`ui/packages/ui/src/tokens.css:596-602`), which is why the real
- * key is used rather than a neighbour's: tokens.css says at `:389-396` that every key an app may
+ * `lantern` HAS a declared block (`ui/packages/ui/src/tokens.css`), which is why the real
+ * key is used rather than a neighbour's: tokens.css says, in the comment on that block, that
+ * every key an app may
  * set is declared, precisely so a surface cannot fall through to the company ember in silence —
  * which is what `admin` did. That block carries amber, and `src/styles.css` then re-points the
  * five accent tokens to the ember ramp. The reason is quoted where that happens.

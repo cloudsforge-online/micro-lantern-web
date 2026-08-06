@@ -9,14 +9,15 @@
  * `lantern` carried `inSwitcher: true` and `servesUi: false` at the same time until 2026-08-04.
  * Every operator who opened the switcher was offered "Logs & errors" and taken to a 404, because
  * `micro-lantern` serves JSON and no HTML. This bundle is what that entry reaches. The registry now
- * agrees — `servesUi: true` (`ui/packages/ui/src/surfaces.ts:405`), `adminOnly: true` (`:407`) —
+ * agrees — `servesUi: true` and `adminOnly: true` on Lantern's entry in
+ * `ui/packages/ui/src/surfaces.ts` —
  * and that flag is why the footer below is not optional: every OTHER surface in the estate derives
  * its own footer from the same registry, so all sixteen now offer a link TO here, and until this
  * commit the page they arrived at had no footer and no way back.
  *
  * ── No mark, and no glyph drawn by this app ───────────────────────────────────────────────────
  *
- * `markId: null` (`surfaces.ts:379`). The registry's `✷` belongs to the switcher entry, which the
+ * `markId: null` (`surfaces.ts`). The registry's `✷` belongs to the switcher entry, which the
  * bar draws. Reproducing it in the page chrome would be this app inventing a mark for a surface
  * that was deliberately not given one.
  *
@@ -172,7 +173,7 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
  * and the path is the address the router is on. Nothing is typed here. `surfaceMeta` supplies the
  * rest from the registry row: the name, the description composed from the blurb, and the robots
  * directive, which for a surface carrying `adminOnly: true` is `noindex, nofollow`
- * (`robotsDirective`, ui/packages/ui/src/seo.ts:139-142 — it reads `servesUi` and `adminOnly` and
+ * (`robotsDirective`, ui/packages/ui/src/seo.ts — it reads `servesUi` and `adminOnly` and
  * nothing else). There is deliberately NO `robots` override in
  * the call: the whole value of deriving it is that this console cannot come to disagree with
  * `surfaces.ts` about whether it may be indexed, and an override here would be exactly that

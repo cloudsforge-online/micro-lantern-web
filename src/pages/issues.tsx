@@ -1,7 +1,7 @@
 /**
  * The open issues — `GET /v1/issues?limit=N`.
  *
- * `listOpenIssues` (`lantern/src/issues.ts:125-134`) returns `new`, `acknowledged` and `regressed`
+ * `listOpenIssues` (`lantern/src/issues.ts`) returns `new`, `acknowledged` and `regressed`
  * only, ordered by `last_seen` descending. There is no filter parameter on this route, so the only
  * control here is the limit, and it is a real one: it goes into `deps` and re-issues the request.
  *
@@ -14,7 +14,7 @@
  *
  * ── `regressed` is why the status column exists ───────────────────────────────────────────────
  *
- * `lantern/src/issues.ts:9-18`: the frozen table had one nullable `resolved_at`, so an occurrence
+ * `lantern/src/issues.ts`: the frozen table had one nullable `resolved_at`, so an occurrence
  * after a resolve bumped `last_seen` under a green label and nobody was told the fault came back.
  * The row that says `regressed` is the most important row this page can draw, which is why it
  * carries the loudest tone in `statusTone()` and why the count of them is stated above the table.
@@ -174,7 +174,7 @@ export function IssuesPage() {
                     {/* A running total, never a count of surviving rows: events are pruned at
                         seven days and issues at ninety, so a count derived from the events table
                         would fall to zero for an issue that is still the estate's biggest problem
-                        (`lantern/src/issues.ts:80-85`). */}
+                        (`lantern/src/issues.ts`). */}
                     <span className="ln-hint"> since first seen</span>
                   </td>
                   <td>

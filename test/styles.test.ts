@@ -9,10 +9,10 @@
  *    nothing read them. Every colour here must be a `var(--cf-*)`, so a change in the design system
  *    reaches this surface and a drift from it is impossible rather than merely discouraged.
  *
- * 2. THE ACCENT IS EMBER, BY INDIRECTION. `ui/packages/ui/src/tokens.css:930-932` says Lantern's
+ * 2. THE ACCENT IS EMBER, BY INDIRECTION. `ui/packages/ui/src/tokens.css` says Lantern's
  *    own UI forces ember "because amber is also its WARN severity and a surface must not wear the
- *    colour of one of the states it reports". Lantern's registry accent (`surfaces.ts:377`) and
- *    `--cf-warn` (`tokens.css:357`) are the same six digits. The override must therefore exist,
+ *    colour of one of the states it reports". Lantern's registry accent (`surfaces.ts`) and
+ *    `--cf-warn` (`tokens.css`) are the same six digits. The override must therefore exist,
  *    and it must be var() indirection — writing `#e8622c` here would satisfy the eye and break
  *    rule 1, which is how a design system quietly becomes a suggestion.
  * ══════════════════════════════════════════════════════════════════════════════════════════════
@@ -68,15 +68,15 @@ describe('the stylesheet', () => {
   })
 
   it('cites the instruction it is following, so the next reader can check it', () => {
-    assert.match(CSS, /tokens\.css:930-932/)
+    assert.match(CSS, /tokens\.css/)
   })
 })
 
 describe('the page names a declared product block', () => {
   it('sets data-cf-product to the real registry key', () => {
-    // tokens.css:910-917 says every key an app may set is declared, precisely so a surface cannot
+    // tokens.css says every key an app may set is declared, precisely so a surface cannot
     // fall through to the company ember in silence — which is what `admin` did. `lantern` has a
-    // block at tokens.css:933-941, so naming it is both honest and safe.
+    // block at tokens.css, so naming it is both honest and safe.
     assert.match(HTML, /data-cf-product="lantern"/)
     assert.match(HTML, /data-cf-substrate="warm"/)
   })
