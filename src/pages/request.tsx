@@ -63,7 +63,7 @@ export function RequestPage() {
   const lookup = useResource<RequestReply>(
     load,
     (data) => data.events.length,
-    'the request could not be looked up',
+    'Something in this bundle threw while looking the id up, so Lantern never got a chance to answer.',
     [id, usable],
   )
 
@@ -73,11 +73,17 @@ export function RequestPage() {
     <section className="ln-page" aria-labelledby="request-title">
       <header className="ln-page__head">
         <h1 className="ln-page__title" id="request-title">
-          Request lookup
+          Trace one request
         </h1>
         <p className="ln-page__lede">
-          Paste the request id from an error screen. Lantern returns every log line that carried it
-          — across every service that touched the request — and the trace it belongs to. Read from{' '}
+          Every service in the estate stamps one id on each line it writes while handling a call,
+          and the same id is printed on the screen the user was looking at when it went wrong. Drop
+          it in the box and Lantern gives back each line that carried it, newest first, no matter
+          which service wrote it. That is a whole request end to end, in the order it fell over.
+        </p>
+        <p className="ln-page__lede">
+          The trace id comes back alongside it, taken from the most recent line that had one, and
+          becomes a link when the deploy has a tracer URL template configured. Read from{' '}
           <code className="cf-num ln-code">GET /v1/requests/:requestId</code>.
         </p>
         <form
@@ -106,46 +112,48 @@ export function RequestPage() {
         </form>
         {id !== '' && !usable && (
           <Note tone="warn">
-            That is not a shape Lantern will look up. The service matches{' '}
+            Lantern will only look up an id built from{' '}
             <code className="cf-num ln-code">[A-Za-z0-9._:-]</code>, between 1 and 128 characters
-            (<code className="cf-num ln-code">lantern/src/reads.ts</code>), and returns no rows
-            for anything else — without an error, which is why this page checks rather than letting
-            an empty answer look like a finished search. Nothing has been requested.
+            long. Anything else comes back as zero rows and no complaint, which looks identical to a
+            real id that logged nothing — so the shape is checked here first. Nothing has been asked
+            of the service.
           </Note>
         )}
       </header>
 
       {id === '' && (
         <Empty
-          title="Nothing looked up yet"
+          title="Waiting for an id"
           hint={
-            'Every failure state in this console prints the request id Lantern gave it, and every ' +
-            'error screen in the estate shows the same id to the person who hit it. This is where ' +
-            'it is spent.'
+            'Every failure on this console prints the request id Lantern handed it, and so does ' +
+            'every error screen the estate shows a user. That string is what this box is for: one ' +
+            'paste, and the whole path the call took becomes readable.'
           }
         />
       )}
 
       {id !== '' && (
         <>
-          {lookup.state === 'loading' && <Loading label={`Looking up ${id}`} />}
+          {lookup.state === 'loading' && <Loading label={`Chasing ${id} across the estate`} />}
           {lookup.state === 'refused' && lookup.error && (
             <Refused notice={lookup.error} onSignIn={() => signIn()} />
           )}
           {lookup.state === 'failed' && lookup.error && (
             <Failed
               notice={lookup.error}
-              what={`the events for request ${id}`}
+              what={`the lines written under ${id}`}
               onRetry={lookup.reload}
             />
           )}
           {lookup.state === 'empty' && usable && (
             <Empty
-              title={`No events carry the request id ${id}`}
+              title={`Nothing was logged under ${id}`}
               hint={
-                'The id is a shape Lantern accepts and it asked. Either nothing logged under it, ' +
-                'or the events have aged out — they are pruned at seven days, while the issues ' +
-                'they were grouped into are kept for ninety. The issues list may still show it.'
+                'The id is a shape Lantern accepts, and it did go and look. Two things produce ' +
+                'this answer: no service ever wrote a line under that id, or the lines have aged ' +
+                'past the seven-day event window. If it is the second, the fault may still be on ' +
+                'the grouped list — an issue outlives the lines it was built from, and it keeps ' +
+                'the trace id from the first time it happened.'
               }
             />
           )}
@@ -167,7 +175,7 @@ export function RequestPage() {
                     ) : (
                       <Maybe
                         value={null}
-                        missing="no trace id on any of these events — the request was not sampled"
+                        missing="not one of these lines carried a trace id, so the request went untraced"
                       />
                     )}
                   </dd>
@@ -182,14 +190,14 @@ export function RequestPage() {
                         rel="noreferrer noopener"
                         target="_blank"
                       >
-                        Open the trace
+                        Open it in the tracer
                       </a>
                     ) : (
                       // Null means the deploy configured no template (`traceUrl`,
                       // `lantern/src/reads.ts`) — an absent link rather than a broken one.
                       <Maybe
                         value={null}
-                        missing="this deploy has no trace URL template configured, so there is no link to build"
+                        missing="no tracer URL template is set on this deploy, so there is nothing to link to — an absent link beats a broken one"
                       />
                     )}
                   </dd>
@@ -198,12 +206,12 @@ export function RequestPage() {
 
               <table className="ln-table">
                 <caption className="ln-table__caption">
-                  {events.length} {events.length === 1 ? 'event' : 'events'} carried this request
-                  id, newest first
+                  {events.length} {events.length === 1 ? 'line' : 'lines'} carried this id, newest
+                  first, across every service that touched the request
                 </caption>
                 <thead>
                   <tr>
-                    <th scope="col">When</th>
+                    <th scope="col">Time</th>
                     <th scope="col">Severity</th>
                     <th scope="col">Service</th>
                     <th scope="col">Message</th>
@@ -229,7 +237,7 @@ export function RequestPage() {
                         {event.err_type && <span className="ln-event__type">{event.err_type}</span>}
                       </td>
                       <td className="cf-num">
-                        <Maybe value={millis(event.latency_ms)} missing="not timed" />
+                        <Maybe value={millis(event.latency_ms)} missing="nothing timed" />
                         {event.status_code !== null && (
                           <span className="ln-hint">HTTP {event.status_code}</span>
                         )}

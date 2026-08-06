@@ -22,22 +22,22 @@ export const ROUTES: readonly RouteDef[] = [
   {
     path: '/',
     label: 'Issues',
-    purpose: 'the open issues, grouped by fingerprint — GET /v1/issues',
+    purpose: 'faults gathered under one fingerprint, newest occurrence first — GET /v1/issues',
   },
   {
     path: '/events',
     label: 'Events',
-    purpose: 'the raw event stream, filtered by service and severity — GET /v1/events',
+    purpose: 'one row per ingested log line, narrowed by service and severity — GET /v1/events',
   },
   {
     path: '/browser',
     label: 'Browser',
-    purpose: 'the RUM samples, including the attributes bag — GET /v1/rum',
+    purpose: 'what instrumented pages reported, with the attributes bag opened — GET /v1/rum',
   },
   {
     path: '/request',
     label: 'Request lookup',
-    purpose: 'paste a request id from an error screen — GET /v1/requests/:requestId',
+    purpose: 'follow one id across every service that touched it — GET /v1/requests/:requestId',
   },
 ]
 

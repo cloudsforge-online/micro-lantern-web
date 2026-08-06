@@ -53,7 +53,7 @@ export function BrowserPage() {
   const samples = useResource<RumReply>(
     load,
     (data) => data.samples.length,
-    'the browser samples could not be read',
+    'Something in this bundle threw while reading the browser reports, so Lantern never got a chance to answer.',
     [app, kind, session, limit],
   )
 
@@ -65,24 +65,39 @@ export function BrowserPage() {
     <section className="ln-page" aria-labelledby="rum-title">
       <header className="ln-page__head">
         <h1 className="ln-page__title" id="rum-title">
-          Browser samples
+          Reports from the browser
         </h1>
         <p className="ln-page__lede">
-          What the estate's frontends reported about themselves — page loads, paints, fetch
-          failures and uncaught errors. Read from{' '}
-          <code className="cf-num ln-code">GET /v1/rum</code>. Samples expire after thirty days and
-          carry no identity: there is no user column, and{' '}
-          <code className="cf-num ln-code">session</code> is a per-tab random string that dies with
-          the tab.
+          Instrumented pages post two sorts of thing here. Faults: an exception nothing caught, a
+          promise that rejected with no handler waiting, a request that came back unusable. And
+          timing: how long a navigation took, when the first pixel of content appeared, and when the
+          largest element did. Six kinds in total, and the column holding them accepts nothing else,
+          so a page reporting under a name Lantern does not know is turned away at the door rather
+          than filed somewhere odd.
         </p>
-        <div className="ln-filters" role="group" aria-label="Filter the browser samples">
+        <p className="ln-page__lede">
+          There is no person in this data and no column that could hold one. A{' '}
+          <code className="cf-num ln-code">userId</code> sent by a page is thrown away before the
+          insert. Credentials matching Lantern's redaction rules are swapped for a fixed marker
+          while the record is still in memory, so a token written into a message never reaches the
+          disk. And <code className="cf-num ln-code">session</code> is a random string minted per
+          browser tab, which dies when the tab does — it stitches two reports from one visit
+          together and names nobody.
+        </p>
+        <p className="ln-page__lede">
+          Read from <code className="cf-num ln-code">GET /v1/rum</code>. A report is deleted thirty
+          days after it arrives, under the deploy's{' '}
+          <code className="cf-num ln-code">LANTERN_RUM_RETENTION_DAYS</code>. Nothing summarises it
+          first, so what ages out is gone for good.
+        </p>
+        <div className="ln-filters" role="group" aria-label="Narrow the browser reports">
           <label className="ln-filter">
             <span className="ln-filter__label">App</span>
             <input
               className="ln-filter__input"
               type="text"
               value={app}
-              placeholder="any app"
+              placeholder="every app"
               onChange={(e) => setApp(e.target.value.trim())}
             />
           </label>
@@ -93,7 +108,7 @@ export function BrowserPage() {
               value={kind}
               onChange={(e) => setKind(e.target.value)}
             >
-              <option value="">any kind</option>
+              <option value="">every kind</option>
               {RUM_KINDS.map((k) => (
                 <option key={k} value={k}>
                   {k}
@@ -107,12 +122,12 @@ export function BrowserPage() {
               className="ln-filter__input ln-filter__input--wide cf-num"
               type="text"
               value={session}
-              placeholder="one tab's random id"
+              placeholder="paste a tab id to follow one visit"
               onChange={(e) => setSession(e.target.value.trim())}
             />
           </label>
           <label className="ln-filter">
-            <span className="ln-filter__label">Limit</span>
+            <span className="ln-filter__label">Rows</span>
             <select
               className="ln-filter__input"
               value={limit}
@@ -128,23 +143,29 @@ export function BrowserPage() {
         </div>
       </header>
 
-      {samples.state === 'loading' && <Loading label="Reading the browser samples" />}
+      {samples.state === 'loading' && <Loading label="Fetching the browser reports" />}
       {samples.state === 'refused' && samples.error && (
         <Refused notice={samples.error} onSignIn={() => signIn()} />
       )}
       {samples.state === 'failed' && samples.error && (
-        <Failed notice={samples.error} what="the browser samples" onRetry={samples.reload} />
+        <Failed notice={samples.error} what="the browser reports" onRetry={samples.reload} />
       )}
       {samples.state === 'empty' && (
         <Empty
-          title={filtered ? 'No samples match this filter' : 'No browser samples'}
+          title={filtered ? 'Nothing matched' : 'No browser reports stored'}
           hint={
             filtered
-              ? 'Lantern answered with an empty list for exactly the filter shown above.'
-              : 'Lantern has stored no browser samples in its thirty-day window. If a frontend ' +
-                'should be reporting, check that its obs client posts to /ingest/client with a ' +
-                '`samples` envelope and a `kind` from the six the column accepts — every one of ' +
-                'those three was wrong at once, and the answer was a cheerful 202.'
+              ? 'Lantern ran the fields above and came back with nothing. Kind is compared against ' +
+                'the six values the column accepts, so a spelling that is close returns zero rows ' +
+                'rather than a complaint.'
+              : 'Nothing has reached the sink inside its thirty-day window. An instrumented page ' +
+                'posts a timing report on every navigation, so quiet here is almost never health. ' +
+                'Three things stop one landing. The sink stays shut unless the deploy names the ' +
+                'posting origin in its allowlist. A body carrying an `events` array is refused ' +
+                'with a 400 naming the mistake, because the key read here is `samples`. And an ' +
+                'entry whose `kind` is outside the six is dropped by itself — the batch still ' +
+                'answers 202, with `stored: 0` and the reason in the body, which is the one that ' +
+                'hides longest.'
           }
         />
       )}
@@ -153,15 +174,16 @@ export function BrowserPage() {
         <>
           {mangled > 0 && (
             <Note tone="warn">
-              {mangled} of {rows.length} rows did not arrive with an object in{' '}
-              <code className="cf-num ln-code">attributes</code>. Each one is flagged where it
-              appears. This is a fact about the stored data, not about this page.
+              {mangled} of these {rows.length} rows carried something other than an object in{' '}
+              <code className="cf-num ln-code">attributes</code>. Each is marked where it appears.
+              The fault is in what was stored, not in how this page reads it, and repairing it
+              quietly here is how it would survive another six months.
             </Note>
           )}
           <p className="ln-hint ln-page__count">
-            {rows.length} {rows.length === 1 ? 'sample' : 'samples'}
-            {filtered ? ', matching the filter above' : ', unfiltered'} — newest first. Expand a row
-            for the fields that have no column.
+            {rows.length} {rows.length === 1 ? 'report' : 'reports'}, newest at the top
+            {filtered ? ', drawn under the fields above' : ', with no filter applied'}. Open a row
+            for the fields that have no column of their own — the type, the message and the stack.
           </p>
           <ul className="ln-samples">
             {rows.map((row) => (
@@ -186,7 +208,7 @@ function SampleRow({ row }: { row: RumRow }) {
   const detail = rumDetail(row.attributes)
   // The headline is the bag's message where there is one — which for an error is the ONLY place
   // it exists. Falling back to the route is honest: a page-load sample genuinely has no message.
-  const headline = detail.message ?? row.route ?? 'no message and no route on this sample'
+  const headline = detail.message ?? row.route ?? 'this report carries neither a message nor a route'
 
   return (
     <li className="ln-sample">
@@ -206,31 +228,31 @@ function SampleRow({ row }: { row: RumRow }) {
               <dd className="ln-fact__value">
                 {/* No column for this. It is in the bag, and it is the classifier the caller
                     actually used — `kind` is the six-value CHECK-constrained label. */}
-                <Maybe value={detail.type} missing="no `type` in attributes" />
+                <Maybe value={detail.type} missing="the page sent no `type` of its own" />
               </dd>
             </div>
             <div className="ln-fact">
               <dt className="ln-fact__label">Message</dt>
               <dd className="ln-fact__value">
-                <Maybe value={detail.message} missing="no `message` in attributes" />
+                <Maybe value={detail.message} missing="nothing in `message` — a timing report has none to send" />
               </dd>
             </div>
             <div className="ln-fact">
               <dt className="ln-fact__label">Route</dt>
               <dd className="ln-fact__value">
-                <Maybe value={row.route} missing="no route recorded" />
+                <Maybe value={row.route} missing="the page did not say which route it was on" />
               </dd>
             </div>
             <div className="ln-fact">
               <dt className="ln-fact__label">Page URL</dt>
               <dd className="ln-fact__value">
-                <Maybe value={detail.url} missing="no `url` in attributes" />
+                <Maybe value={detail.url} missing="no page address came with it" />
               </dd>
             </div>
             <div className="ln-fact">
               <dt className="ln-fact__label">Duration</dt>
               <dd className="ln-fact__value">
-                <Maybe value={millis(row.value_ms)} missing="this kind measures nothing" />
+                <Maybe value={millis(row.value_ms)} missing="this kind carries no duration" />
               </dd>
             </div>
             <div className="ln-fact">
@@ -238,7 +260,7 @@ function SampleRow({ row }: { row: RumRow }) {
               <dd className="ln-fact__value">
                 <Maybe
                   value={row.status_code === null ? null : String(row.status_code)}
-                  missing="not a response"
+                  missing="this report is not about a response"
                 />
               </dd>
             </div>
@@ -250,7 +272,7 @@ function SampleRow({ row }: { row: RumRow }) {
                 ) : (
                   <Maybe
                     value={null}
-                    missing="none — nothing server-side handled this, so there is no id to join on"
+                    missing="none: no server handled this, so there is nothing to join to the log lines"
                   />
                 )}
               </dd>
@@ -261,26 +283,33 @@ function SampleRow({ row }: { row: RumRow }) {
                 {row.trace_id ? (
                   <Id value={row.trace_id} />
                 ) : (
-                  <Maybe value={null} missing="none" />
+                  <Maybe
+                    value={null}
+                    missing="none — the estate's own browser client sends no trace context, so its reports leave this empty"
+                  />
                 )}
               </dd>
             </div>
             <div className="ln-fact">
               <dt className="ln-fact__label">Session</dt>
               <dd className="ln-fact__value">
-                {row.session ? <Id value={row.session} short /> : <Maybe value={null} missing="none" />}
+                {row.session ? (
+                  <Id value={row.session} short />
+                ) : (
+                  <Maybe value={null} missing="none: the tab had nowhere to keep one" />
+                )}
               </dd>
             </div>
             <div className="ln-fact">
               <dt className="ln-fact__label">Release</dt>
               <dd className="ln-fact__value">
-                <Maybe value={detail.release} missing="no `release` in attributes" />
+                <Maybe value={detail.release} missing="no build tag came with it" />
               </dd>
             </div>
             <div className="ln-fact">
               <dt className="ln-fact__label">User agent</dt>
               <dd className="ln-fact__value">
-                <Maybe value={detail.userAgent} missing="no `userAgent` in attributes" />
+                <Maybe value={detail.userAgent} missing="no user-agent string was sent" />
               </dd>
             </div>
           </dl>

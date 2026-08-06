@@ -39,7 +39,7 @@ import { NotFoundPage } from './pages/not-found.tsx'
 
 function Gate({ children }: { children: React.ReactNode }) {
   const { status, signIn } = useSession()
-  if (status === 'loading') return <Loading label="Checking your session" />
+  if (status === 'loading') return <Loading label="Working out whether you are signed in" />
   if (status === 'anonymous') return <SignInWall onSignIn={() => signIn()} />
   return <>{children}</>
 }

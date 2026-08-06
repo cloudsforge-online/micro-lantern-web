@@ -208,7 +208,7 @@ describe('the estate sign-on this console is part of', () => {
       // AND ONCE. The portal holds no session in this scenario, so it kept the browser; a reader
       // who comes back must get this console rather than be sent round again.
       await session.page.goto(`${surface.origin}/`, { waitUntil: 'domcontentloaded' })
-      await assertMounted(session, { showing: ['Lantern is an operator surface'] })
+      await assertMounted(session, { showing: ['You need an operator session for this'] })
       assert.equal(
         portalCalls(session).length,
         1,
@@ -228,7 +228,7 @@ describe('the estate sign-on this console is part of', () => {
     try {
       // The operator is on the console, signed in, having typed nothing. This is the journey the
       // footer defect was the visible half of.
-      await assertMounted(session, { showing: ['Open issues', 'estateadmin'] })
+      await assertMounted(session, { showing: ['Grouped faults', 'estateadmin'] })
       assert.equal(session.page.url(), `${surface.origin}/`)
 
       // The code was spent at identity's redemption route and is NOT in the address bar. Both
@@ -266,7 +266,7 @@ describe('the estate footer', () => {
       await session.page.goto(`${surface.origin}/`, { waitUntil: 'domcontentloaded' })
       // The state this defect was reported in. A signed-out operator gets `SignInWall` inside
       // `<main>`; the shell is OUTSIDE the gate, so the footer must be under it.
-      await assertMounted(session, { showing: ['Lantern is an operator surface'] })
+      await assertMounted(session, { showing: ['You need an operator session for this'] })
       const f = await session.page.evaluate(READ_FOOTER)
 
       assert.equal(f.shared, true, 'the page does not render @cloudsforge/ui’s CloudsForgeFooter')
@@ -335,7 +335,7 @@ describe('the estate footer', () => {
       stubs: [portal(true), REDEEM, PORTAL_FAVICON, ...READS],
     })
     try {
-      await assertMounted(session, { showing: ['Open issues'] })
+      await assertMounted(session, { showing: ['Grouped faults'] })
       const f = await session.page.evaluate(READ_FOOTER)
       assert.equal(f.shared, true)
 
@@ -364,7 +364,7 @@ describe('the estate footer', () => {
       stubs: [portal(true), REDEEM, PORTAL_FAVICON, ...READS],
     })
     try {
-      await assertMounted(session, { showing: ['Open issues'] })
+      await assertMounted(session, { showing: ['Grouped faults'] })
       assert.deepEqual(
         portalCalls(session).map((r) => r.url),
         [],
