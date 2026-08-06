@@ -11,20 +11,20 @@
 /* ───────────────────────────────────────────────────────────────────────────────────────────────
  * THE ACCENT IS RE-POINTED TO EMBER, AND THE REASON IS THE DESIGN SYSTEM'S OWN.
  *
- * `ui/packages/ui/src/tokens.css:594-596` says, verbatim:
+ * `ui/packages/ui/src/tokens.css` says, verbatim:
  *
  *     "Note that Lantern's own UI forces ember for its chrome, because amber is also its WARN
  *      severity and a surface must not wear the colour of one of the states it reports."
  *
- * That is not a preference. Lantern's registry accent is `#f4a63c` (`surfaces.ts:381`) and
- * `--cf-warn` is `#f4a63c` (`tokens.css:111`) — the same six digits. A console whose buttons,
+ * That is not a preference. Lantern's registry accent is `#f4a63c` (`surfaces.ts`) and
+ * `--cf-warn` is `#f4a63c` (`tokens.css`) — the same six digits. A console whose buttons,
  * links and focus rings are painted in its own WARN colour teaches an operator to stop reading
  * amber as a severity, on the one screen where amber is a severity.
  *
  * index.html still names the real key `lantern`, so `[data-cf-product='lantern']` — a DECLARED
- * block at tokens.css:596-602 — is what applies, and nothing falls through in silence. These five
+ * block at tokens.css — is what applies, and nothing falls through in silence. These five
  * declarations then move the accent to the ember ramp. They are var() indirection, not literals:
- * the ember values live in tokens.css:35-39 and are never copied here.
+ * the ember values live in tokens.css and are never copied here.
  * ─────────────────────────────────────────────────────────────────────────────────────────────── */
 [data-cf-product='lantern'] {
   --cf-accent: var(--cf-ember);

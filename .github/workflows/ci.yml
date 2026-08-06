@@ -102,7 +102,7 @@ jobs:
       - name: No hex literal in this surface's stylesheet
         # Lantern's registry accent is byte-identical to --cf-warn, and this surface deliberately
         # re-points its accent to the ember ramp through var() indirection
-        # (ui/packages/ui/src/tokens.css:594-596). A hex literal anywhere in src/styles.css is
+        # (ui/packages/ui/src/tokens.css). A hex literal anywhere in src/styles.css is
         # either that decision being undone by hand or the design system being forked in place.
         # test/styles.test.ts is the same rule; this is here so deleting the test does not delete
         # the rule with it.
@@ -127,7 +127,7 @@ jobs:
 
       - name: The break-glass token never ships in the bundle
         # micro-lantern accepts a static token header before it consults identity
-        # (lantern/src/server.ts:617-624). That secret is for a curl. In a JavaScript bundle it
+        # (lantern/src/server.ts). That secret is for a curl. In a JavaScript bundle it
         # would be a shared credential in every browser cache the page ever loaded into.
         #
         # Comment lines are stripped first. This repository documents the header's existence at

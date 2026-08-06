@@ -65,10 +65,10 @@ export function Empty({
  * There it was right to delete: `micro-indexer` opened its reads, so no visitor could be refused
  * and a component explaining a restriction nobody was under would be believed anyway.
  *
- * `micro-lantern` refuses every anonymous read (`authorise`, `lantern/src/server.ts:623-636`) and
- * `lantern` is `adminOnly` in the registry (`surfaces.ts:388`). The two refusals are different
+ * `micro-lantern` refuses every anonymous read (`authorise`, `lantern/src/server.ts`) and
+ * `lantern` is `adminOnly` in the registry (`surfaces.ts`). The two refusals are different
  * events with different next actions, and the CODE is what separates them
- * (`lantern/src/server.ts:354`, `:358`):
+ * (`authorise` in `lantern/src/server.ts`):
  *
  *   401 `unauthenticated`  no credential, or one Lantern could not verify. Sign in.
  *   403 `forbidden`        a credential that is not enough. Signing in again will not help, and

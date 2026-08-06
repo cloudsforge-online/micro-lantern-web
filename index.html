@@ -5,10 +5,10 @@
   because a page that paints before the attributes land flashes the default ember and then
   changes colour.
 
-  `lantern` is the real registry key (ui/packages/ui/src/surfaces.ts:375-389) and it has a
-  DECLARED block at ui/packages/ui/src/tokens.css:596-602, so nothing here falls through to the
+  `lantern` is the real registry key (ui/packages/ui/src/surfaces.ts) and it has a
+  DECLARED block at ui/packages/ui/src/tokens.css, so nothing here falls through to the
   company default in silence. That block carries amber — and this surface then re-points the five
-  accent tokens to the ember ramp in src/styles.css, for the reason tokens.css:594-596 states
+  accent tokens to the ember ramp in src/styles.css, for the reason tokens.css states
   verbatim. Naming some other key would have been the lazy way to get ember, and it would have
   been a lie about which surface this is.
 -->
@@ -24,7 +24,7 @@
     -->
     <meta name="cf-release" content="dev" />
     <!--
-      Lantern carries `markId: null` in the registry (surfaces.ts:385), so no mark and no wordmark
+      Lantern carries `markId: null` in the registry (surfaces.ts), so no mark and no wordmark
       appear anywhere in this bundle. These are the company chrome, which a separate hostname needs
       regardless: a browser tab and a shared link inherit nothing.
     -->
@@ -46,7 +46,7 @@
     <meta property="og:image" content="/og-1200x630.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <!-- An operator console has nothing a search engine should hold. `adminOnly: true`
-         (surfaces.ts:388) is the authorisation fact; this is the indexing one, and they are not
+         (surfaces.ts) is the authorisation fact; this is the indexing one, and they are not
          the same statement. -->
     <meta name="robots" content="noindex, nofollow" />
   </head>

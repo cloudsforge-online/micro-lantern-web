@@ -9,14 +9,15 @@
  * `lantern` carried `inSwitcher: true` and `servesUi: false` at the same time until 2026-08-04.
  * Every operator who opened the switcher was offered "Logs & errors" and taken to a 404, because
  * `micro-lantern` serves JSON and no HTML. This bundle is what that entry reaches. The registry now
- * agrees — `servesUi: true` (`ui/packages/ui/src/surfaces.ts:418`), `adminOnly: true` (`:420`) —
+ * agrees — `servesUi: true` and `adminOnly: true` on Lantern's entry in
+ * `ui/packages/ui/src/surfaces.ts` —
  * and that flag is why the footer below is not optional: every OTHER surface in the estate derives
  * its own footer from the same registry, so all sixteen now offer a link TO here, and until this
  * commit the page they arrived at had no footer and no way back.
  *
  * ── No mark, and no glyph drawn by this app ───────────────────────────────────────────────────
  *
- * `markId: null` (`surfaces.ts:392`). The registry's `✷` belongs to the switcher entry, which the
+ * `markId: null` (`surfaces.ts`). The registry's `✷` belongs to the switcher entry, which the
  * bar draws. Reproducing it in the page chrome would be this app inventing a mark for a surface
  * that was deliberately not given one.
  */

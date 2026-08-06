@@ -10,9 +10,9 @@
  *
  * ── Every read is credentialled, and that is the service's decision, not this file's ──────────
  *
- * `authorise` (`lantern/src/server.ts:623-636`) runs before all four handlers. With no credential
+ * `authorise` (`lantern/src/server.ts`) runs before all four handlers. With no credential
  * the answer is 401 `unauthenticated`; with a service token lacking the read scope it is 403
- * `forbidden` (`lantern/src/server.ts:354`, `:358`). So these calls are made with `auth: true`
+ * `forbidden`, both raised by that same `authorise`. So these calls are made with `auth: true`
  * (the default) and the bearer this bundle holds is the identity JWT. The break-glass
  * `x-lantern-token` is NOT sent from here and must never be: a shared static secret in a
  * JavaScript bundle is a shared static secret in every browser cache on the estate.
@@ -21,7 +21,7 @@ import { api } from './api.ts'
 
 /* ------------------------------------------------------------------ the grouped issues */
 
-/** `lantern/src/issues.ts:111-122`. `events` is `::text` because it is a bigint. */
+/** `lantern/src/issues.ts`. `events` is `::text` because it is a bigint. */
 export interface IssueRow {
   readonly fingerprint: string
   readonly service: string
@@ -36,20 +36,20 @@ export interface IssueRow {
 }
 
 /**
- * The status ladder, `lantern/src/issues.ts:5-7`: `new → acknowledged → resolved → regressed`.
+ * The status ladder, `lantern/src/issues.ts`: `new → acknowledged → resolved → regressed`.
  *
- * `listOpenIssues` (`:125-134`) returns only `new`, `acknowledged` and `regressed`, so `resolved`
+ * `listOpenIssues` returns only `new`, `acknowledged` and `regressed`, so `resolved`
  * cannot appear in this list — it is included here anyway, because a vocabulary that omits a value
  * the service can produce is how an unknown string ends up rendered as a blank badge.
  */
 export const ISSUE_STATUSES = ['new', 'acknowledged', 'resolved', 'regressed'] as const
 
-/** `issues.severity` is CHECKed to this set — `lantern/src/issues.ts:25`. */
+/** `issues.severity` is CHECKed to this set — `lantern/src/issues.ts`. */
 export const ISSUE_SEVERITIES = ['fatal', 'error', 'warn'] as const
 
 /* ------------------------------------------------------------------ the raw events */
 
-/** `lantern/src/reads.ts:12-28`, one field per selected column. */
+/** `lantern/src/reads.ts`, one field per selected column. */
 export interface EventRow {
   readonly id: string
   readonly ts: string
@@ -70,7 +70,7 @@ export interface EventRow {
 
 /* ------------------------------------------------------------------ the browser samples */
 
-/** `lantern/src/reads.ts:114-126`. */
+/** `lantern/src/reads.ts`. */
 export interface RumRow {
   readonly id: string
   readonly ts: string
@@ -85,7 +85,7 @@ export interface RumRow {
   readonly attributes: unknown
 }
 
-/** The six values `rum_samples.kind` is CHECKed to — `lantern/src/rum.ts:25`, mirrored in obs.ts. */
+/** The six values `rum_samples.kind` is CHECKed to — `lantern/src/rum.ts`, mirrored in obs.ts. */
 export const RUM_KINDS = [
   'page_load',
   'first_contentful_paint',
@@ -104,7 +104,7 @@ export const RUM_KINDS = [
  * ── 1. NOTHING HAS EVER READ THIS COLUMN ──────────────────────────────────────────────────────
  *
  * `rum_samples` was write-only for the whole life of the service: inserted by the sink, deleted by
- * retention, selected by nothing (`lantern/src/reads.ts:128-144` says so where the reader was
+ * retention, selected by nothing (`lantern/src/reads.ts` says so where the reader was
  * finally added). This page is the first thing in the estate that will ever display it. There is
  * therefore NO body of experience saying what these values look like in practice, and everything
  * below is written for a value that may be anything at all.
@@ -229,7 +229,7 @@ export interface EventsReply {
 export interface RumReply {
   readonly samples: readonly RumRow[]
 }
-/** `lantern/src/server.ts:539-553`. `traceUrl` is null unless the deploy configured a template. */
+/** `lantern/src/server.ts`. `traceUrl` is null unless the deploy configured a template. */
 export interface RequestReply {
   readonly requestId: string
   readonly traceId: string | null
@@ -238,7 +238,7 @@ export interface RequestReply {
 }
 
 /**
- * `limit` is clamped by the service, not here — `clampLimit` at `lantern/src/server.ts:656-660`
+ * `limit` is clamped by the service, not here — `clampLimit` at `lantern/src/server.ts`
  * takes 100 as the default and caps issues at 500 and events/rum at 1000. A client-side clamp
  * would be a second copy of a rule the service owns, and the copy is the one that goes stale.
  */
@@ -254,7 +254,7 @@ export interface EventFilter {
 }
 
 export function listEvents(filter: EventFilter, signal: AbortSignal): Promise<EventsReply> {
-  // Empty strings are dropped rather than sent: `paramOrUndef` (`lantern/src/server.ts:662-664`)
+  // Empty strings are dropped rather than sent: `paramOrUndef` (`lantern/src/server.ts`)
   // treats an empty value as absent anyway, and sending `service=` makes a URL that reads as a
   // filter on nothing.
   return api<EventsReply>('/v1/events', {
@@ -290,7 +290,7 @@ export function listRum(filter: RumFilter, signal: AbortSignal): Promise<RumRepl
 /**
  * The request-id lookup — the workflow the whole service is shaped around.
  *
- * `13-operational-model.md:73-78`, quoted in `lantern/src/reads.ts:6-8`: "a user quotes an id from
+ * `13-operational-model.md`, quoted in `lantern/src/reads.ts`: "a user quotes an id from
  * an error screen and an operator pastes it into one search box". This is that box.
  *
  * The id is path-encoded rather than sent as a query parameter because that is the route the

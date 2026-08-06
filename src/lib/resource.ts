@@ -13,8 +13,8 @@
  * a reader could act on.
  *
  * Nothing of the sort is true here. `micro-lantern` authorises every read
- * (`lantern/src/server.ts:623-636`) and `lantern` is `adminOnly: true` in the registry
- * (`ui/packages/ui/src/surfaces.ts:388`). A 401 means "sign in", a 403 means "you are signed in
+ * (`lantern/src/server.ts`) and `lantern` is `adminOnly: true` in the registry
+ * (`ui/packages/ui/src/surfaces.ts`). A 401 means "sign in", a 403 means "you are signed in
  * and this estate does not consider you an operator", and those are two different sentences with
  * two different next actions. Collapsing either into `failed` puts a "try again" button in front
  * of somebody for whom trying again cannot possibly work.

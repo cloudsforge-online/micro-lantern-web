@@ -10,7 +10,7 @@
  *
  * ── One thing is different on THIS surface, and it is the opposite of the explorer's ──────────
  *
- * `micro-lantern` REFUSES an anonymous read. `authorise` (`lantern/src/server.ts:623-636`) checks
+ * `micro-lantern` REFUSES an anonymous read. `authorise` (`lantern/src/server.ts`) checks
  * the break-glass `x-lantern-token` first and then falls through to an identity JWT; with no
  * credential at all it throws `TokenError('no credential presented')` and the route answers 401.
  * Every one of the four reads this bundle makes goes through it.
@@ -123,8 +123,8 @@ export class ApiError extends Error {
  * Pull the sentence, the code and the request id out of a service's error body.
  *
  * The estate's envelope is **nested** — `{error: {code, message, requestId}}`, built by
- * `errorReply()` in every service (`hub-api/src/server.ts:589`, `identity/src/server.ts:1431`,
- * `service-template/src/server.ts:342`). This function used to read it as flat, assigning
+ * `errorReply()` in every service (`hub-api/src/server.ts`, `identity/src/server.ts`,
+ * `service-template/src/server.ts`). This function used to read it as flat, assigning
  * `data.error` — an object — straight to the displayed message. Every server-side failure in
  * every app cut from this template would have rendered as `[object Object]`, with the real
  * message, the code and the request id all present in the response and all discarded. The
@@ -179,7 +179,7 @@ export interface ErrorNotice {
    * The template drops it, and dropping it is how `micro-market` and `micro-mint` each rendered a
    * router 404 as a fact about a chain. It matters here for the same shape of reason:
    * `micro-lantern` answers 401 with code `unauthenticated` and 403 with code `forbidden`
-   * (`lantern/src/server.ts:354` and `:358`), and an operator needs to know which of "sign in" and
+   * (both from `authorise` in `lantern/src/server.ts`), and an operator needs to know which of "sign in" and
    * "you are signed in and still not allowed" they are looking at.
    */
   code: string | undefined
@@ -294,15 +294,15 @@ export interface RequestOptions {
    * Extra request headers. **Nothing on this surface sets one, and that is a fact about the API.**
    *
    * `micro-lantern` reads exactly three request headers on a read route: `x-lantern-token` and
-   * `authorization` in `authorise` (`lantern/src/server.ts:617-636`), plus `x-request-id` in the
-   * server frame (`lantern/src/server.ts:199`). There is no `Idempotency-Key` anywhere in that
+   * `authorization` in `authorise` (`lantern/src/server.ts`), plus `x-request-id` in the
+   * server frame (`lantern/src/server.ts`). There is no `Idempotency-Key` anywhere in that
    * repository and this bundle sends no write that would need one — every route it calls is a GET,
    * and the service's only writes are the ingest paths a collector posts to.
    *
    * The parameter is kept rather than deleted because it is the template's and because deleting it
    * would make the next writer add it back without the note. Copying `trade-web`'s client here
    * would have sent an `Idempotency-Key` this service never reads; copying this one to `trade`
-   * would fail every write with a **400** (`trade/src/server.ts:840-848`). Two clients that look
+   * would fail every write with a **400** (`trade/src/server.ts`). Two clients that look
    * alike and are not interchangeable is exactly the shape this estate keeps shipping.
    *
    * `authorization` and `content-type` are set by this function AFTER these are spread, so a
@@ -398,7 +398,7 @@ async function request<T>(base: string, path: string, opts: RequestOptions = {})
     // a session they never had.
     //
     // `explorer-web` reported that defect to micro-web-template and the template has since fixed
-    // it (`web-template/src/lib/api.ts:344`, `if (res.status === 401 && auth && hasSession())`).
+    // it (`web-template/src/lib/api.ts`, `if (res.status === 401 && auth && hasSession())`).
     // This line is the template's, not a fork of it, and `test/api.test.ts` checks the two agree.
     // Unlike on the explorer, the guard is load-bearing HERE: every read this bundle makes is
     // credentialled, so a 401 arriving without a session is the service saying "authenticate",
@@ -481,10 +481,10 @@ export type BootResult = 'signed-in' | 'signed-out' | 'asking-the-portal'
  * The one bridge is the portal hand-off: go to `hub/account/login?return=<here>`, and a portal
  * that already holds a session mints a 60-second, single-use, origin-bound code and returns the
  * browser with it in the fragment — no second credential prompt
- * (`hub-web/src/pages/account.tsx:210-236`). `admin-web` has crossed that bridge all along, from
- * `ProtectedRoute` (`admin-web/src/lib/auth.tsx:202-215`); this console never did, and the cost
+ * (`hub-web/src/pages/account.tsx`). `admin-web` has crossed that bridge all along, from
+ * `ProtectedRoute` (`admin-web/src/lib/auth.tsx`); this console never did, and the cost
  * was not only a sign-in button shown to somebody already signed in. `CloudsForgeFooter` decides
- * `adminOnly` visibility from `account.roles` (`ui/packages/ui/src/index.tsx:969`), so with no
+ * `adminOnly` visibility from `account.roles` (`ui/packages/ui/src/index.tsx`), so with no
  * session there are no roles, and the footer hid Admin, Foresight Admin, Lantern and Beacon from
  * every operator on the two consoles those links matter most on. `micro-ui`'s `pnpm footer-audit`
  * reported exactly that, four times per surface, the day it began signing in for `adminOnly`
@@ -499,7 +499,7 @@ export type BootResult = 'signed-in' | 'signed-out' | 'asking-the-portal'
  *
  * And nothing here decides who is an operator. This asks "is there a session at all", exactly as
  * the gate does; `roles` is read only to decide what the chrome may OFFER. Lantern verifies the
- * credential on every route it serves (`authorise`, `lantern/src/server.ts:623-636`) and is the
+ * credential on every route it serves (`authorise`, `lantern/src/server.ts`) and is the
  * only thing that can. A link on a page is not an authorisation.
  * ══════════════════════════════════════════════════════════════════════════════════════════════
  *

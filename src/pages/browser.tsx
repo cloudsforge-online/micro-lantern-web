@@ -5,7 +5,7 @@
  * THIS PAGE IS THE FIRST THING IN THE ESTATE THAT HAS EVER READ `rum_samples`.
  *
  * The table was WRITE-ONLY for the whole life of the service: inserted by the ingest sink, deleted
- * by retention, and selected by nothing (`lantern/src/reads.ts:128-144`). A browser error could be
+ * by retention, and selected by nothing (`lantern/src/reads.ts`). A browser error could be
  * collected perfectly, stored perfectly, and be invisible to every human in the company — which is
  * worse than not collecting it, because it looks like coverage. `/v1/rum` and this page are the
  * two halves of fixing that, and they landed on the same night.

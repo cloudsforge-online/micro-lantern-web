@@ -6,9 +6,9 @@
  *
  * micro-ui measured the estate's reserved status hues at ΔE 4.6 apart under protanopia, which is
  * why `status-web` encodes every day three times. Here there is a second reason on top: Lantern's
- * own registry accent is `#f4a63c` (`ui/packages/ui/src/surfaces.ts:381`), which is byte-identical
- * to `--cf-warn` (`ui/packages/ui/src/tokens.css:111`) — the colour of one of the states it
- * reports. `tokens.css:594-596` says so and instructs this surface to wear ember instead, which
+ * own registry accent is `#f4a63c` (`ui/packages/ui/src/surfaces.ts`), which is byte-identical
+ * to `--cf-warn` (`ui/packages/ui/src/tokens.css`) — the colour of one of the states it
+ * reports. `tokens.css` says so and instructs this surface to wear ember instead, which
  * `src/styles.css` does. But even with the chrome moved out of the way, a badge that meant `warn`
  * only by being amber would say nothing to a reader who cannot separate it from the red one.
  *
@@ -39,7 +39,7 @@ const UNKNOWN_SEVERITY = (value: string): Tone => ({
 
 /**
  * A log severity. `events.severity` is free-form on the service side; `issues.severity` is CHECKed
- * to `error | fatal | warn` (`lantern/src/issues.ts:25`).
+ * to `error | fatal | warn` (`lantern/src/issues.ts`).
  */
 export function severityTone(severity: string): Tone {
   switch (severity) {
@@ -59,11 +59,11 @@ export function severityTone(severity: string): Tone {
 }
 
 /**
- * A place on the status ladder — `lantern/src/issues.ts:5-7`.
+ * A place on the status ladder — `lantern/src/issues.ts`.
  *
  * `regressed` is the one that matters and the reason the ladder exists: the frozen `issues` table
  * had a single nullable `resolved_at`, so an occurrence after a resolve bumped `last_seen` under a
- * green label and nobody was told the fault came back (`lantern/src/issues.ts:9-18`). It is
+ * green label and nobody was told the fault came back (`lantern/src/issues.ts`). It is
  * therefore given the LOUDEST tone of the four, not the neutral one a "known issue" would get.
  */
 export function statusTone(status: string): Tone {
@@ -86,7 +86,7 @@ export function statusTone(status: string): Tone {
   }
 }
 
-/** A browser sample kind. Six values, CHECK-constrained — `lantern/src/rum.ts:25`. */
+/** A browser sample kind. Six values, CHECK-constrained — `lantern/src/rum.ts`. */
 export function kindTone(kind: string): Tone {
   switch (kind) {
     case 'error':

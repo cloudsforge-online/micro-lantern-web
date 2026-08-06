@@ -34,7 +34,7 @@ export default defineConfig({
   // `beacon-web`, which is being cut at the same time as this one — two frontends that collide on
   // a dev port do not fail, they serve each other's bundle to whoever started second.
   //
-  // NOT lantern's registry devPort (4010, surfaces.ts:380). That is the port the SERVICE binds,
+  // NOT lantern's registry devPort (4010, surfaces.ts). That is the port the SERVICE binds,
   // and this is the port the page is served from; they are two different things and `apiBase()`
   // in src/lib/hosts.ts derives the cross-origin gap between them.
   server: { port: 5190 },

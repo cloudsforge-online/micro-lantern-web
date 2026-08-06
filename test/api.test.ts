@@ -13,7 +13,7 @@ import { isRefusal, resourceState } from '../src/lib/resource.ts'
 
 describe('readErrorBody', () => {
   it('reads the estate NESTED envelope, which is what micro-lantern sends', () => {
-    // `errorReply` at lantern/src/server.ts:679-681 builds exactly this.
+    // `errorReply` at lantern/src/server.ts builds exactly this.
     const parsed = readErrorBody({
       error: { code: 'unauthenticated', message: 'a valid credential is required', requestId: 'r1' },
     })

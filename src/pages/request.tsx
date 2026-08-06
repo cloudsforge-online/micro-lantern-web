@@ -4,7 +4,7 @@
  * ══════════════════════════════════════════════════════════════════════════════════════════════
  * THE WORKFLOW THE WHOLE SERVICE IS SHAPED AROUND.
  *
- * `13-operational-model.md:73-78`, quoted verbatim in `lantern/src/reads.ts:6-8`: "a user quotes
+ * `13-operational-model.md`, quoted verbatim in `lantern/src/reads.ts`: "a user quotes
  * an id from an error screen and an operator pastes it into one search box". This is that box. The
  * partial `events_request_id_idx` exists for this query and `traceForRequestId` exists to turn the
  * paste into a jump to the trace.
@@ -26,7 +26,7 @@
  *
  * ── An unparseable id comes back EMPTY, not as an error ───────────────────────────────────────
  *
- * `eventsByRequestId` (`lantern/src/reads.ts:54-60`) tests the id against
+ * `eventsByRequestId` (`lantern/src/reads.ts`) tests the id against
  * `/^[A-Za-z0-9._:-]{1,128}$/` and returns no rows if it fails — it does not 400. So a paste with
  * a stray quote in it is indistinguishable, in the response, from a real id with no events. This
  * page therefore applies the same test in the browser and says which of the two the reader is
@@ -108,7 +108,7 @@ export function RequestPage() {
           <Note tone="warn">
             That is not a shape Lantern will look up. The service matches{' '}
             <code className="cf-num ln-code">[A-Za-z0-9._:-]</code>, between 1 and 128 characters
-            (<code className="cf-num ln-code">lantern/src/reads.ts:51</code>), and returns no rows
+            (<code className="cf-num ln-code">lantern/src/reads.ts</code>), and returns no rows
             for anything else — without an error, which is why this page checks rather than letting
             an empty answer look like a finished search. Nothing has been requested.
           </Note>
@@ -186,7 +186,7 @@ export function RequestPage() {
                       </a>
                     ) : (
                       // Null means the deploy configured no template (`traceUrl`,
-                      // `lantern/src/reads.ts:80-83`) — an absent link rather than a broken one.
+                      // `lantern/src/reads.ts`) — an absent link rather than a broken one.
                       <Maybe
                         value={null}
                         missing="this deploy has no trace URL template configured, so there is no link to build"

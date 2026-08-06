@@ -87,7 +87,7 @@ const UI_CONTRAST: readonly KnownViolation[] = []
  * The surface under test is served from 127.0.0.1, which `cloudsforgeHosts()` treats as local, so
  * every other surface resolves to its registry dev port and the stub table can answer by path
  * alone. Nothing here restates the registry: the ports come out of it at runtime, which is the
- * reason the registry exists (`ui/packages/ui/src/surfaces.ts:8-11` — the same list used to be
+ * reason the registry exists (`ui/packages/ui/src/surfaces.ts` — the same list used to be
  * maintained by hand in eight places and had already drifted).
  */
 const SIGNIN = 'http://localhost:3010/account'

@@ -1,7 +1,7 @@
 /**
  * The raw event stream — `GET /v1/events?service=&severity=&traceId=&limit=`.
  *
- * `listEvents` (`lantern/src/reads.ts:86-110`) builds the where-clause from whichever of the three
+ * `listEvents` (`lantern/src/reads.ts`) builds the where-clause from whichever of the three
  * filters are present. Note the asymmetry, because it is visible on this page: `service` and
  * `severity` are matched verbatim, but `traceId` is only applied if it matches
  * `/^[0-9a-f]{32}$/` — a 31-character paste is silently ignored and the unfiltered stream comes
@@ -120,7 +120,7 @@ export function EventsPage() {
         {!traceIdApplied && (
           <Note tone="warn">
             A trace id is 32 hexadecimal characters; this one is {traceId.length}. Lantern would
-            ignore it and return the unfiltered stream (`lantern/src/reads.ts:100-103`), so it has
+            ignore it and return the unfiltered stream (`lantern/src/reads.ts`), so it has
             not been sent — the rows below are NOT filtered by trace. Finish the id, or clear it.
           </Note>
         )}
