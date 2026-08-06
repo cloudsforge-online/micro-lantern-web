@@ -11,20 +11,34 @@
 /* ───────────────────────────────────────────────────────────────────────────────────────────────
  * THE ACCENT IS RE-POINTED TO EMBER, AND THE REASON IS THE DESIGN SYSTEM'S OWN.
  *
- * `ui/packages/ui/src/tokens.css:594-596` says, verbatim:
+ * `ui/packages/ui/src/tokens.css:930-932` says, verbatim:
  *
  *     "Note that Lantern's own UI forces ember for its chrome, because amber is also its WARN
  *      severity and a surface must not wear the colour of one of the states it reports."
  *
- * That is not a preference. Lantern's registry accent is `#f4a63c` (`surfaces.ts:381`) and
- * `--cf-warn` is `#f4a63c` (`tokens.css:111`) — the same six digits. A console whose buttons,
+ * That is not a preference. Lantern's registry accent is `#f4a63c` (`surfaces.ts:377`) and
+ * `--cf-warn` is `#f4a63c` (`tokens.css:357`) — the same six digits. A console whose buttons,
  * links and focus rings are painted in its own WARN colour teaches an operator to stop reading
  * amber as a severity, on the one screen where amber is a severity.
  *
  * index.html still names the real key `lantern`, so `[data-cf-product='lantern']` — a DECLARED
- * block at tokens.css:596-602 — is what applies, and nothing falls through in silence. These five
+ * block at tokens.css:933-941 — is what applies, and nothing falls through in silence. These five
  * declarations then move the accent to the ember ramp. They are var() indirection, not literals:
- * the ember values live in tokens.css:35-39 and are never copied here.
+ * the ember values live in tokens.css:167-171 and are never copied here.
+ *
+ * ── THE FIVE LINE NUMBERS ABOVE WERE ALL WRONG UNTIL 2026-08-06 ───────────────────────────────
+ *
+ * Not by a line or two: `tokens.css:594-596` landed in the middle of a paragraph about which four
+ * hues survive deuteranopia in a scatter plot, and `tokens.css:111` in the motion tokens. The
+ * quotation was still accurate — it is quoted verbatim above and was re-read at 930-932 — but
+ * every pointer to it had rotted while @cloudsforge/ui grew a light scheme, a severity text ramp
+ * and eleven product blocks between this file and the thing it cites.
+ *
+ * That is worth a paragraph rather than a silent fix, because the quotation surviving while the
+ * pointer rots is the WHOLE failure mode: a reader who checks the citation finds unrelated prose,
+ * concludes the comment is stale, and stops checking the next one. `test/styles.test.ts` pins the
+ * citation string precisely so this file cannot cite a paragraph that is no longer there without
+ * somebody looking — and that assertion moved with these, in the same commit, for the same reason.
  * ─────────────────────────────────────────────────────────────────────────────────────────────── */
 [data-cf-product='lantern'] {
   --cf-accent: var(--cf-ember);
@@ -58,25 +72,28 @@ body {
   background: var(--cf-bg);
   color: var(--cf-fg);
   font-family: var(--cf-font-sans);
-  /* The bar is dark on every surface; the page follows the substrate. */
-  color-scheme: dark;
+  /*
+   * `color-scheme: dark` WAS HERE, and it is now the shared layer's to decide.
+   *
+   * It read "the bar is dark on every surface; the page follows the substrate", which was true
+   * when the estate had one scheme. With @cloudsforge/ui 1.1 it does not: `data-cf-scheme="auto"`
+   * on <html> (index.html) follows the reader's operating system, and this declaration overrode
+   * that for the two things `color-scheme` actually controls — the UA's form controls and its
+   * scrollbars. A reader on a light desktop would have got the light palette from the token layer
+   * with dark scrollbars and a dark date picker nailed to it, which reads as a rendering fault
+   * rather than as a theme. `<meta name="color-scheme" content="dark light">` in index.html now
+   * declares what this document supports and the token layer resolves which one applies.
+   */
 }
 
 /* ---- layout ------------------------------------------------------------------------------- */
 
-.ln-skip {
-  position: absolute;
-  left: -9999px;
-  top: 0;
-  z-index: 100;
-  padding: 0.6rem 1rem;
-  background: var(--cf-accent);
-  color: var(--cf-accent-ink);
-  border-radius: 0 0 var(--cf-radius) 0;
-}
-.ln-skip:focus {
-  left: 0;
-}
+/*
+ * `.ln-skip` was here. The skip link is now `SkipLink` from @cloudsforge/ui and wears `.cf-skip`,
+ * which ui.css styles for all seventeen surfaces — see src/components/shell.tsx, which also
+ * records the defect the local copy carried: it pointed at a `<main>` with no `tabIndex`, so the
+ * page scrolled and focus never moved.
+ */
 
 .ln-subnav {
   position: sticky;
@@ -169,8 +186,20 @@ body {
   border-radius: var(--cf-radius);
   min-width: 9rem;
 }
+/*
+ * `min-width: 22rem` was here, flat, and 22rem is 352px against a 16px root — wider than the 350px
+ * of usable page a 390px viewport leaves after `.ln-main`'s 1.25rem gutters. It put the trace-id
+ * and session fields 3px past the edge and made the document scroll sideways by that much on all
+ * three filtered pages: not enough to notice by eye, enough to give a phone a horizontal scrollbar
+ * on a page with no wide content on it at all.
+ *
+ * `min()` rather than a media query, because the number this is competing with is the container's,
+ * not the viewport's — a query would have to guess the gutters, and would be wrong again the day
+ * `.ln-main` is retuned. 22rem stays the intent: a request id is 26 characters and a field that
+ * shows half of one is a field an operator cannot check a paste against.
+ */
 .ln-filter__input--wide {
-  min-width: 22rem;
+  min-width: min(22rem, 100%);
 }
 .ln-filter__input:focus-visible {
   outline: 2px solid var(--cf-accent);
@@ -203,6 +232,47 @@ body {
 .ln-badge__glyph {
   font-size: 0.9em;
 }
+/*
+ * SEVERITY AS TEXT TAKES THE TEXT STEP. SEVERITY AS A BORDER OR A FILL TAKES THE PLAIN ONE.
+ *
+ * @cloudsforge/ui 1.1 gave each severity level a `-text` step for the reason `--cf-accent-text`
+ * exists: `--cf-critical` is #d2543a and measures 3.38:1 on the tightest ground this system
+ * composes text on, which is below the AA floor for text and above the 3:1 floor a border needs.
+ * tokens.css:331-339 names the two surfaces that shipped the word "failed" below that floor, and
+ * tokens.css:361 carries the derived step and its measurement.
+ *
+ * The badges below are the only place on this console where a severity is the COLOUR OF A WORD,
+ * so they are the only place the distinction bites. `--cf-danger` and `--cf-success` are kept as
+ * written: tokens.css:389-391 declares them as ALIASES OF THE TEXT STEPS — `--cf-danger` IS
+ * `var(--cf-critical-text)`, read at the line — precisely so that existing `color:` uses became
+ * compliant without every repository being edited, and rewriting them here would be churn that
+ * changes no pixel. `--cf-warn` is not such an alias; it is the plain step, so it is the one name
+ * on this page that did not carry the guarantee, and it is the one that moved.
+ *
+ * ── AND THE WARN MOVE CHANGES NOTHING TODAY, WHICH IS THE POINT OF MAKING IT ──────────────────
+ *
+ * Stated plainly rather than left for somebody to discover and revert as pointless: `--cf-warn`
+ * and `--cf-warn-text` are the SAME VALUE in both schemes — #f4a63c dark (tokens.css:357-358, at
+ * 6.91:1) and #83571c light (tokens.css:1129-1130, at 4.63:1). Amber is the one level that clears
+ * the text floor unaided, so this edit repaints not a single pixel.
+ *
+ * What it changes is which token carries the contract. `--cf-warn-text` is the name the design
+ * system promises to keep above 4.5:1; `--cf-warn` is the name it promises to keep above 3:1, and
+ * a future retune of the warn ramp is free to drop the plain step to 3.2:1 and derive a lighter
+ * text step beside it — exactly what has already happened to `--cf-critical`, one level down, and
+ * exactly what nobody would think to check this file for. The alternative to moving it now is
+ * moving it after a shared-token change has silently put the word "warn" under the floor.
+ *
+ * The BORDERS in this file are left exactly as they are, and that is the same decision rather than
+ * an oversight: tokens.css:341-345 says in terms that `--cf-danger` as a border "keeps clearing
+ * the 3:1 non-text floor it needs". `.ln-note--warn`, `.wt-state--refused`, `.wt-state--failed`
+ * and `.ln-filter__input[aria-invalid]` are all borders and all stay plain. Rewriting them to the
+ * text steps would move four colours to prove a point the tokens already make, and would make the
+ * borders lighter than the system intends.
+ *
+ * Nothing here relies on colour alone in any case: `components/tone.tsx` ships a glyph and a word
+ * beside every one of these, which is the rule tokens.css:347-352 states for the same tokens.
+ */
 .ln-badge--fatal {
   color: var(--cf-danger);
   border-color: var(--cf-danger);
@@ -211,7 +281,7 @@ body {
   color: var(--cf-danger);
 }
 .ln-badge--warn {
-  color: var(--cf-warn);
+  color: var(--cf-warn-text);
 }
 .ln-badge--info {
   color: var(--cf-ink-2);
@@ -224,6 +294,44 @@ body {
 }
 
 /* ---- tables ------------------------------------------------------------------------------- */
+
+/*
+ * THE ONE ELEMENT ON THIS CONSOLE THAT IS ALLOWED TO SCROLL SIDEWAYS, AND IT IS NOT THE DOCUMENT.
+ *
+ * The issues table is six columns and the events table is nine, and neither has a minimum width a
+ * phone can hold: measured at 390x780 in headless Chromium, against the built bundle behind this
+ * repository's own nginx.conf, `.ln-table` laid out at 580px inside a 390px viewport and
+ * `documentElement.scrollWidth - clientWidth` was 210. With nothing to absorb that, the overflow
+ * was the DOCUMENT's — so scrolling right to read an issue title also carried away the sticky
+ * sub-nav, the heading and the filters, and the operator had to scroll back before they could
+ * change page. A page that scrolls horizontally as a whole is broken in a way a page with one
+ * scrollable table is not.
+ *
+ * Not a regression from @cloudsforge/ui 1.1: the identical measurement on the commit before the
+ * adoption gives the identical 210. It was found while checking for reflow the shared 16px body
+ * text might have introduced, which is the only reason anybody drove this page at a phone width.
+ *
+ * `overflow-x: auto` on a wrapper rather than `display: block` on `.ln-table`, which is the
+ * one-line version and the wrong one — a table given `display: block` stops being a table for
+ * assistive technology in Firefox and Safari, and this console's tables are exactly the content
+ * whose row-and-column relationships carry the meaning. The wrapper leaves the table a table.
+ *
+ * `overflow-y` is deliberately NOT set. `overflow-x: auto` alone computes `overflow-y` to `auto`
+ * as well, which is harmless here (nothing constrains the height) and is the reason the pair is
+ * left as one declaration rather than written out as `overflow: auto hidden` — that spelling clips
+ * a focus ring on the last row.
+ */
+.ln-tablewrap {
+  overflow-x: auto;
+  /* The focusable-region ring, matching every other focus stop on this surface. The container is
+     focusable because a scroll container only a mouse can reach fails WCAG 2.1 SC 2.1.1; see the
+     comment on the element in pages/issues.tsx. */
+  border-radius: var(--cf-radius);
+}
+.ln-tablewrap:focus-visible {
+  outline: 2px solid var(--cf-accent);
+  outline-offset: 2px;
+}
 
 .ln-table {
   width: 100%;

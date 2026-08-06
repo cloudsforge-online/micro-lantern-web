@@ -3,7 +3,8 @@
  *
  * `rum_samples.attributes` was written as a JSON STRING inside a `jsonb` column, and nothing in the
  * estate read the column, so nothing could observe it. Both halves are fixed — the service has a
- * reader (`lantern/src/reads.ts:145-167`) and the writer stores a real object, verified against the
+ * reader (`lantern/src/reads.ts:145-168`, `listRumSamples`) and the writer stores a real object,
+ * verified against the
  * running service — but rows written before the fix survive until retention takes them, and a
  * service can regress. The branch below is what keeps such a row READABLE and FLAGGED rather than
  * silently laundered.

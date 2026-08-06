@@ -104,8 +104,37 @@ export function IssuesPage() {
               rather than when it was first found.
             </Note>
           )}
+          {/*
+            THE SCROLL BELONGS TO THE TABLE, NOT TO THE DOCUMENT.
+
+            A six-column table of issue titles, service names and timestamps has a minimum width of
+            roughly 580px and cannot be made narrower without truncating the one column an operator
+            reads. On a 390px viewport that is 210px WIDER THAN THE PAGE, and with no container to
+            absorb it the overflow was the document's: `<html>` scrolled sideways, taking the
+            section navigation, the page heading and the filters with it, so an operator on a phone
+            scrolled right to read a title and lost the tabs that get them back.
+
+            Measured at 390x780 in headless Chromium against the built bundle behind this
+            repository's own nginx.conf: `documentElement.scrollWidth - clientWidth` was 210 on
+            this page and 3 on the other three. It is NOT a regression from the @cloudsforge/ui 1.1
+            adoption — the same measurement on the commit before it is byte-identical — it is a
+            defect this surface shipped with, found by driving the page at a phone width while
+            checking for reflow the shared 16px body text might have caused.
+
+            `overflow-x: auto` on a wrapper and NOT `display: block` on the `<table>` itself, which
+            is the shorter version of this fix and the wrong one: a table set to `display: block`
+            loses its table semantics in Firefox and Safari, and the rows an assistive technology
+            would announce as "row 2 of 12, Service, micro-nimbus" become undifferentiated text.
+            The wrapper keeps the element a table and gives the overflow somewhere to go.
+
+            `tabIndex={0}` because a scroll container that only a mouse can reach is a WCAG 2.1
+            failure (SC 2.1.1): keyboard readers must be able to scroll it, and a focusable region
+            is how. `role="region"` with the caption's text as its label so the focus stop
+            announces what it is rather than landing on an unnamed box.
+          */}
+          <div className="ln-tablewrap" tabIndex={0} role="region" aria-labelledby="issues-caption">
           <table className="ln-table">
-            <caption className="ln-table__caption">
+            <caption className="ln-table__caption" id="issues-caption">
               {rows.length} open {rows.length === 1 ? 'issue' : 'issues'}, most recently seen first
             </caption>
             <thead>
@@ -155,6 +184,7 @@ export function IssuesPage() {
               ))}
             </tbody>
           </table>
+          </div>
         </>
       )}
     </section>

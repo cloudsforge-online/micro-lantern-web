@@ -16,6 +16,7 @@
 import { createRequire } from 'node:module'
 import { readFileSync } from 'node:fs'
 import type { Page } from 'playwright-core'
+import { MAIN_ID } from '@cloudsforge/ui'
 
 const require = createRequire(import.meta.url)
 
@@ -297,8 +298,26 @@ export async function textOrder(page: Page, first: string, second: string): Prom
  * surfaces move it on different axes — `site` slides it down, `network-site` slides it in from
  * the left. Asserting an axis would assert one implementation and fail a correct alternative,
  * which is how a guard ends up being deleted rather than satisfied.
+ *
+ * ── THE DEFAULT TARGET IS READ FROM @cloudsforge/ui, NOT WRITTEN HERE ─────────────────────────
+ *
+ * It was the literal `'#main'`, which was right while every surface hand-rolled its own skip link
+ * onto its own `<main id="main">`. @cloudsforge/ui 1.1 supplies the pair — `SkipLink` and
+ * `MainRegion`, which set `id={MAIN_ID}` and `tabIndex={-1}` together so the two cannot disagree —
+ * and `MAIN_ID` is `cf-main`. This surface adopted them, so the literal became a default that
+ * matches nothing, and the failure it would produce is the confusing kind: "the first thing Tab
+ * reaches is #cf-main, not the skip link #main" — a correct page reported as broken, on the one
+ * assertion an author is most tempted to loosen.
+ *
+ * Derived rather than retyped, so the day the shared id changes this follows it. A caller may
+ * still pass an explicit target: a surface that keeps its own `<main>` and adds the two attributes
+ * by hand is a documented shape (see `MainRegion`'s own doc), and it is allowed to say so.
  */
-export async function assertSkipLink(page: Page, where: string, target = '#main'): Promise<void> {
+export async function assertSkipLink(
+  page: Page,
+  where: string,
+  target = `#${MAIN_ID}`,
+): Promise<void> {
   const inViewport = () =>
     page.evaluate(() => {
       const el = document.activeElement as HTMLElement | null

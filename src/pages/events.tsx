@@ -147,9 +147,23 @@ export function EventsPage() {
         />
       )}
 
+      {/*
+        The scroll belongs to the table, not to the document — the same wrapper, for the same
+        measured reason, as `pages/issues.tsx`, whose comment carries the full argument and the
+        numbers. Nine columns here rather than six, so this table is the wider of the two.
+
+        The comment sits ABOVE the conditional rather than immediately inside it, and that is not a
+        style preference: a braced JSX comment as the first thing after `{cond && (` does not
+        compile. Inside those parentheses the parser is reading an EXPRESSION, where a `{` opens an
+        object literal rather than a comment, and the error it produces — "Expression expected",
+        pointing at the closing brace of the component sixty lines below — names neither the
+        comment nor the line it is on. `pages/issues.tsx` places the same comment inside a fragment,
+        which IS children position, and compiles.
+      */}
       {events.state === 'ok' && (
+        <div className="ln-tablewrap" tabIndex={0} role="region" aria-labelledby="events-caption">
         <table className="ln-table">
-          <caption className="ln-table__caption">
+          <caption className="ln-table__caption" id="events-caption">
             {rows.length} {rows.length === 1 ? 'event' : 'events'}
             {filtered ? ', matching the filter above' : ', unfiltered'}
           </caption>
@@ -203,6 +217,7 @@ export function EventsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </section>
   )

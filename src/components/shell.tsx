@@ -9,21 +9,41 @@
  * `lantern` carried `inSwitcher: true` and `servesUi: false` at the same time until 2026-08-04.
  * Every operator who opened the switcher was offered "Logs & errors" and taken to a 404, because
  * `micro-lantern` serves JSON and no HTML. This bundle is what that entry reaches. The registry now
- * agrees — `servesUi: true` (`ui/packages/ui/src/surfaces.ts:418`), `adminOnly: true` (`:420`) —
+ * agrees — `servesUi: true` (`ui/packages/ui/src/surfaces.ts:405`), `adminOnly: true` (`:407`) —
  * and that flag is why the footer below is not optional: every OTHER surface in the estate derives
  * its own footer from the same registry, so all sixteen now offer a link TO here, and until this
  * commit the page they arrived at had no footer and no way back.
  *
  * ── No mark, and no glyph drawn by this app ───────────────────────────────────────────────────
  *
- * `markId: null` (`surfaces.ts:392`). The registry's `✷` belongs to the switcher entry, which the
+ * `markId: null` (`surfaces.ts:379`). The registry's `✷` belongs to the switcher entry, which the
  * bar draws. Reproducing it in the page chrome would be this app inventing a mark for a surface
  * that was deliberately not given one.
+ *
+ * (Those three line numbers were 418, 420 and 392 until 2026-08-06, and all three were wrong. The
+ * `lantern` row spans 370-409; 392 is a comment line INSIDE it, and 418 and 420 are past its
+ * closing brace, in `beacon` — a comment about Beacon's accent, and `glyph: '◉'`. So all three
+ * sent a reader to prose or to the wrong surface's wrong field, and the fields they claimed to
+ * name are at 405, 407 and 379.
+ *
+ * Worth the paragraph because of how the correction went. The first draft of it asserted that 418
+ * and 420 land on Beacon's OWN `servesUi`/`adminOnly` — plausible, tidy, and false; Beacon carries
+ * those at 446 and 448. It was written from the same habit that produced the stale numbers in the
+ * first place, caught only because it too was re-read at the line before being committed. That is
+ * the whole discipline: a citation is checked or it is decoration, and there is no third state.)
  */
-import { CloudsForgeBar, CloudsForgeFooter } from '@cloudsforge/ui'
-import { NavLink, Outlet } from 'react-router-dom'
+import { useEffect } from 'react'
+import {
+  CloudsForgeBar,
+  CloudsForgeFooter,
+  CookieBanner,
+  MainRegion,
+  SkipLink,
+} from '@cloudsforge/ui'
+import { applyHead, normalisePath, surfaceMeta } from '@cloudsforge/ui/seo'
+import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { PRODUCT } from '../lib/hosts.ts'
-import { NAV } from '../lib/routes.ts'
+import { NAV, ROUTES } from '../lib/routes.ts'
 import { useSession } from '../lib/auth.tsx'
 
 export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
@@ -31,11 +51,22 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
 
   return (
     <>
-      {/* Skip link first in the DOM: these pages are long tables and a keyboard user should not
-          have to tab the navigation and every filter to reach the rows. */}
-      <a className="ln-skip" href="#main">
-        Skip to the page
-      </a>
+      {/*
+        Skip link first in the DOM, and it is now the SHARED one rather than this repository's own.
+
+        These pages are long tables and a keyboard reader should not have to tab the bar's logo,
+        the product switcher, the account menu and every filter to reach the rows — WCAG 2.2 SC
+        2.4.1, and the repeated block it is about is precisely the shared bar. This surface had one
+        of the estate's two hand-rolled skip links; sixteen others had none, which is why it moved
+        into @cloudsforge/ui.
+
+        The half that was wrong here and is now right: the local link pointed at `#main` on a
+        `<main>` with no `tabIndex`, and a `<main>` is not focusable by default. Chrome and Safari
+        therefore SCROLLED to it and left focus on the link, so the next Tab went back into the bar
+        — the reader was returned to the block they had just asked to bypass. `MainRegion` below
+        supplies `id={MAIN_ID}` and `tabIndex={-1}` together, so the two cannot disagree.
+      */}
+      <SkipLink>Skip to the page</SkipLink>
       <CloudsForgeBar
         current={PRODUCT}
         account={account}
@@ -60,7 +91,8 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
           ))}
         </div>
       </nav>
-      <main className="ln-main" id="main">
+      <DocumentMeta />
+      <MainRegion className="ln-main">
         {/*
           `cloudsforgeHosts()` derives the apex by stripping a KNOWN subdomain, so an address the
           registry does not know makes every estate URL resolve one level too deep — including the
@@ -82,7 +114,7 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
           </p>
         )}
         <Outlet />
-      </main>
+      </MainRegion>
 
       {/*
         The company footer, from @cloudsforge/ui, and NEVER a local copy. Every link in it is
@@ -104,6 +136,71 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
         listed at all, which is the same rule the switcher follows.
       */}
       <CloudsForgeFooter current={PRODUCT} account={account} />
+
+      {/*
+        Last in the document, and therefore last in the tab order. That is deliberate: the banner
+        is a dialog and is explicitly NOT modal, so a reader who came here to work an incident can
+        work it and answer afterwards. A consent banner that traps focus is the coercion the
+        regulation is about.
+
+        ON THIS SURFACE IT RENDERS NOTHING, AND IT IS HERE ANYWAY. `CookieBanner` returns null when
+        `analyticsId()` finds no `cf-analytics` meta tag in the shell, and this shell deliberately
+        carries none — index.html states the reason at length: `/request?id=…` puts a live
+        CloudsForge request id in the query string and GA4's `page_location` would hand it to
+        Google. Mounting the component regardless keeps that decision in ONE place. The alternative
+        — leaving it out — is indistinguishable from the seventeen surfaces that simply had not got
+        round to consent yet, and is the shape that gets "fixed" by somebody adding the meta tag
+        without ever reading why it was absent.
+      */}
+      <CookieBanner />
     </>
   )
+}
+
+/**
+ * Keep `document.title`, the description, the Open Graph tags, the canonical link and the robots
+ * directive in step with the address.
+ *
+ * A component in the shell rather than a hook called by each page, because the failure mode of the
+ * second shape is the page that forgets to call it — and the page that forgets is the one added
+ * last, which is the one nobody has bookmarked yet and therefore the one nobody notices is titled
+ * with the previous page's title.
+ *
+ * ── EVERY STRING HERE COMES FROM A DECLARATION THAT ALREADY EXISTS ────────────────────────────
+ *
+ * The title is the route's own `label` from `lib/routes.ts` — the same string the sub-nav draws —
+ * and the path is the address the router is on. Nothing is typed here. `surfaceMeta` supplies the
+ * rest from the registry row: the name, the description composed from the blurb, and the robots
+ * directive, which for a surface carrying `adminOnly: true` is `noindex, nofollow`
+ * (`robotsDirective`, ui/packages/ui/src/seo.ts:139-142 — it reads `servesUi` and `adminOnly` and
+ * nothing else). There is deliberately NO `robots` override in
+ * the call: the whole value of deriving it is that this console cannot come to disagree with
+ * `surfaces.ts` about whether it may be indexed, and an override here would be exactly that
+ * disagreement waiting to happen. index.html's static `<meta name="robots">` is the same fact for
+ * the crawler that does not execute JavaScript, and `nginx.conf`'s /robots.txt is the third —
+ * `test/sitemap.test.ts` traces all three back to the one registry field.
+ *
+ * An address with no route — anything that falls to `path="*"` and renders NotFoundPage — gets the
+ * bare surface name and no invented title. A hand-typed "Not found" here would be a fourth
+ * description of a page whose own heading already says it, and it is not a page anybody links to
+ * on purpose.
+ */
+function DocumentMeta() {
+  const { pathname } = useLocation()
+  useEffect(() => {
+    /*
+     * Normalised before the lookup, and this is not tidiness. `nginx.conf`'s `/?$` accepts
+     * `/events/` as well as `/events`, so both addresses reach this component; matched raw, the
+     * trailing-slash spelling would find no route, lose its title and canonicalise to a second
+     * address for one page. `surfaceMeta` normalises the path it is GIVEN — it cannot normalise
+     * the key this file looks a label up with.
+     */
+    const path = normalisePath(pathname)
+    const label = ROUTES.find((r) => r.path === path)?.label
+    applyHead(
+      surfaceMeta(PRODUCT, { ...(label == null ? {} : { title: label }), path }),
+      window.location.origin,
+    )
+  }, [pathname])
+  return null
 }

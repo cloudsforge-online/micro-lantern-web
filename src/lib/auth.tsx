@@ -13,7 +13,7 @@
  * (`lantern/src/server.ts:623-636`) accepts the break-glass `x-lantern-token`, or an identity JWT
  * whose principal is a user, or a service token holding the read scope — and throws
  * `TokenError('no credential presented')` otherwise. The browser holds only the second of those.
- * And `lantern` is `adminOnly: true` in the registry (`ui/packages/ui/src/surfaces.ts:388`), which
+ * And `lantern` is `adminOnly: true` in the registry (`ui/packages/ui/src/surfaces.ts:407`), which
  * is the estate saying out loud that this surface is not for customers.
  *
  * So a signed-out visitor gets ONE screen: a panel that says what this is and offers `signIn()`.
