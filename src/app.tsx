@@ -27,6 +27,7 @@
  * to distrust it.
  */
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { ScrollToTop } from './components/scroll-to-top.tsx'
 import { AppShell } from './components/shell.tsx'
 import { Loading, SignInWall } from './components/states.tsx'
 import { AuthProvider, useSession } from './lib/auth.tsx'
@@ -49,6 +50,7 @@ export function App() {
 
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AuthProvider>
         <Routes>
           <Route element={<AppShell unregistered={unregistered} />}>
