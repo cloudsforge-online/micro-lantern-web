@@ -298,7 +298,7 @@ describe('the estate footer', () => {
         f.links.filter((l) => l.current),
         [],
       )
-      assert.match(f.text, /Lantern — Logs & errors/)
+      assert.match(f.text, /Lantern — Logs, errors and browser samples, for operators/)
 
       // The stylesheet reached the page. A footer whose markup is perfect and whose CSS never
       // arrived is not a footer anybody can read — three surfaces in this estate shipped that way.
