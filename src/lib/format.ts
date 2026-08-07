@@ -34,7 +34,7 @@ const UNKNOWN_SEVERITY = (value: string): Tone => ({
   glyph: '·',
   // An unrecognised severity is shown verbatim rather than folded into `info`. The set is a CHECK
   // constraint on the service's side, so a value outside it means the contract moved.
-  meaning: `a severity this console does not recognise (${value})`,
+  meaning: `Lantern sent "${value}", which sits outside the vocabulary this console knows`,
 })
 
 /**
@@ -44,15 +44,15 @@ const UNKNOWN_SEVERITY = (value: string): Tone => ({
 export function severityTone(severity: string): Tone {
   switch (severity) {
     case 'fatal':
-      return { tone: 'fatal', word: 'fatal', glyph: '✖', meaning: 'the process could not continue' }
+      return { tone: 'fatal', word: 'fatal', glyph: '✖', meaning: 'the process stopped here' }
     case 'error':
-      return { tone: 'error', word: 'error', glyph: '▲', meaning: 'a request or job failed' }
+      return { tone: 'error', word: 'error', glyph: '▲', meaning: 'a request or a job did not complete' }
     case 'warn':
-      return { tone: 'warn', word: 'warn', glyph: '△', meaning: 'something recoverable went wrong' }
+      return { tone: 'warn', word: 'warn', glyph: '△', meaning: 'something went wrong and was survived' }
     case 'info':
-      return { tone: 'info', word: 'info', glyph: '·', meaning: 'an ordinary log line' }
+      return { tone: 'info', word: 'info', glyph: '·', meaning: 'routine, kept for context' }
     case 'debug':
-      return { tone: 'plain', word: 'debug', glyph: '·', meaning: 'a developer log line' }
+      return { tone: 'plain', word: 'debug', glyph: '·', meaning: 'written for whoever was debugging' }
     default:
       return UNKNOWN_SEVERITY(severity)
   }
@@ -69,17 +69,17 @@ export function severityTone(severity: string): Tone {
 export function statusTone(status: string): Tone {
   switch (status) {
     case 'new':
-      return { tone: 'error', word: 'new', glyph: '◆', meaning: 'seen for the first time' }
+      return { tone: 'error', word: 'new', glyph: '◆', meaning: 'nobody has taken this one on yet' }
     case 'acknowledged':
-      return { tone: 'info', word: 'acknowledged', glyph: '◇', meaning: 'somebody has picked it up' }
+      return { tone: 'info', word: 'acknowledged', glyph: '◇', meaning: 'someone has claimed it' }
     case 'resolved':
-      return { tone: 'good', word: 'resolved', glyph: '✓', meaning: 'closed, and not seen since' }
+      return { tone: 'good', word: 'resolved', glyph: '✓', meaning: 'closed, with no occurrence since' }
     case 'regressed':
       return {
         tone: 'fatal',
         word: 'regressed',
         glyph: '↺',
-        meaning: 'resolved, and then it happened again',
+        meaning: 'closed once, and then it happened again',
       }
     default:
       return UNKNOWN_SEVERITY(status)
@@ -90,31 +90,41 @@ export function statusTone(status: string): Tone {
 export function kindTone(kind: string): Tone {
   switch (kind) {
     case 'error':
-      return { tone: 'error', word: 'error', glyph: '▲', meaning: 'an exception in the browser' }
+      return { tone: 'error', word: 'error', glyph: '▲', meaning: 'the page threw and nothing caught it' }
     case 'unhandled_rejection':
       return {
         tone: 'error',
         word: 'unhandled rejection',
         glyph: '▲',
-        meaning: 'a promise rejected with nothing to catch it',
+        meaning: 'a promise rejected with no handler waiting',
       }
     case 'fetch_error':
       return {
         tone: 'warn',
         word: 'fetch error',
         glyph: '△',
-        meaning: 'a request the browser made did not succeed',
+        meaning: 'the page asked for something and did not get it',
       }
     case 'page_load':
-      return { tone: 'info', word: 'page load', glyph: '▢', meaning: 'a navigation completed' }
+      return {
+        tone: 'info',
+        word: 'page load',
+        glyph: '▢',
+        meaning: 'a navigation finished; the duration is how long it took',
+      }
     case 'first_contentful_paint':
-      return { tone: 'info', word: 'first paint', glyph: '◐', meaning: 'the first content painted' }
+      return {
+        tone: 'info',
+        word: 'first paint',
+        glyph: '◐',
+        meaning: 'the moment anything at all appeared on screen',
+      }
     case 'largest_contentful_paint':
       return {
         tone: 'info',
         word: 'largest paint',
         glyph: '◑',
-        meaning: 'the largest element painted',
+        meaning: 'the moment the biggest element appeared',
       }
     default:
       return UNKNOWN_SEVERITY(kind)
@@ -133,7 +143,7 @@ export function instant(iso: string, now: number = Date.now()): { absolute: stri
   if (Number.isNaN(at)) {
     // Shown verbatim rather than as "Invalid Date". A timestamp this console cannot parse is a
     // fact about the row, and hiding it behind a placeholder loses the only copy of it.
-    return { absolute: iso, relative: 'unparseable timestamp' }
+    return { absolute: iso, relative: 'a timestamp nothing here can parse' }
   }
   return { absolute: new Date(at).toISOString(), relative: relative(at - now) }
 }

@@ -17,6 +17,8 @@
  *      `.finally()` could not express it, which is why the boot reports three outcomes and not a
  *      boolean.
  *
+ * Consent is primed between 1 and 2: see the note beside `initAnalytics()`.
+ *
  * The three stylesheet imports are in this order and all three are required. `tokens.css` declares
  * the custom properties, `ui.css` styles the shared bar, and `styles.css` is this app's own —
  * which contains no hex literal and consumes the tokens. Three surfaces in this estate rendered
@@ -28,11 +30,31 @@ import { createRoot } from 'react-dom/client'
 import '@cloudsforge/ui/tokens.css'
 import '@cloudsforge/ui/ui.css'
 import './styles.css'
+import { initAnalytics } from '@cloudsforge/ui/consent'
 import { App } from './app.tsx'
 import { bootstrapSession, type BootResult } from './lib/api.ts'
 import { initObs } from './lib/obs.ts'
 
 initObs()
+
+/*
+ * Consent Mode is primed with every category DENIED before anything else runs — two pushes onto a
+ * plain array, no request, no cookie — and the analytics tag is loaded ONLY if this reader granted
+ * consent on a previous visit AND this surface has a measurement ID to load one for.
+ *
+ * ON THIS SURFACE IT LOADS NOTHING, EVER, AND IS CALLED ANYWAY. `index.html` carries no
+ * `cf-analytics` meta tag and says at length why not: `/request?id=…` puts a live CloudsForge
+ * request id in the query string, and GA4's `page_location` would ship it to Google on every
+ * lookup. `analyticsId()` (ui/packages/ui/src/consent.ts) therefore returns null, and this
+ * call reduces to installing the denied default. Keeping it is what makes the decision live in
+ * ONE place — the shell — rather than being half-expressed here as a missing line that reads like
+ * an omission.
+ *
+ * It goes here, second, rather than inside a component, because the denied default has to be in
+ * place before any tag could conceivably arrive; a default installed after a script has begun
+ * running is a race, and the losing branch of that race sets a cookie.
+ */
+initAnalytics()
 
 const container = document.getElementById('root')
 if (!container) throw new Error('#root is missing from index.html')

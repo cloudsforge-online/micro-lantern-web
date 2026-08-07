@@ -108,24 +108,26 @@ export function EncodingNote({ encoding }: { encoding: string }) {
   if (encoding === 'double-encoded') {
     return (
       <Note tone="warn">
-        This row's <code className="cf-num ln-code">attributes</code> arrived as a JSON{' '}
-        <strong>string</strong> inside the <code className="cf-num ln-code">jsonb</code> column, not
-        as an object. It has been parsed once so the fields below are readable, and the row is
-        flagged rather than quietly repaired. To confirm it is the data and not this page:{' '}
+        The <code className="cf-num ln-code">attributes</code> on this row were stored as a JSON{' '}
+        <strong>string</strong> sitting inside the <code className="cf-num ln-code">jsonb</code>{' '}
+        column, where an object belongs. It has been unwrapped once so the fields below are legible,
+        and left marked rather than tidied away — a client that silently mends bad storage
+        guarantees the storage stays bad. To settle whether the data or this page is at fault, run{' '}
         <code className="cf-num ln-code">
           select jsonb_typeof(attributes), count(*) from rum_samples group by 1
-        </code>{' '}
-        — <code className="cf-num ln-code">object</code> is healthy,{' '}
-        <code className="cf-num ln-code">string</code> is this.
+        </code>
+        : <code className="cf-num ln-code">object</code> is what a sound row looks like, and{' '}
+        <code className="cf-num ln-code">string</code> is this one.
       </Note>
     )
   }
   return (
     <Note tone="warn">
-      This row's <code className="cf-num ln-code">attributes</code> could not be read as an object,
-      so the fields a browser error carries — its type, message and stack — are not available for
-      it. Nothing has been substituted for them. Check{' '}
-      <code className="cf-num ln-code">jsonb_typeof(attributes)</code> for this row.
+      The <code className="cf-num ln-code">attributes</code> on this row would not read as an object
+      at all, so the three things a browser error keeps there — its type, its message and its stack
+      — are missing for it. Nothing has been invented in their place. Run{' '}
+      <code className="cf-num ln-code">jsonb_typeof(attributes)</code> against this row to see what
+      reached the column.
     </Note>
   )
 }

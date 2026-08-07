@@ -18,12 +18,13 @@ export function NotFoundPage() {
     <section className="ln-page" aria-labelledby="notfound-title">
       <header className="ln-page__head">
         <h1 className="ln-page__title" id="notfound-title">
-          Lantern does not serve this address
+          Nothing is served at this address
         </h1>
         <p className="ln-page__lede">
-          This page is being delivered with a real <code className="cf-num ln-code">404</code>, not
-          a 200 that says "not found" — so a link checker, a crawler and an uptime probe all see
-          what you see.
+          The status on this response is a genuine <code className="cf-num ln-code">404</code>,
+          rather than a 200 carrying the words "not found", so a crawler, a link checker and an
+          uptime probe all read it exactly as you do. If a runbook sent you here, its link has
+          drifted. Below is what Lantern answers to today.
         </p>
       </header>
       <ul className="ln-routes">

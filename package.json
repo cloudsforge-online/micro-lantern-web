@@ -1,6 +1,6 @@
 {
   "name": "@cloudsforge/lantern-web",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "packageManager": "pnpm@11.9.0",
   "private": true,
   "description": "The operator console for micro-lantern: grouped issues, raw events, browser RUM samples, and the request-id lookup an operator pastes an id into mid-incident.",
@@ -16,6 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --import tsx --import @cloudsforge/ui/test-loader --test test/*.test.ts"
   },
+  "//version": "1.0.0 -> 1.1.0 with the @cloudsforge/ui 1.1 adoption, and the bump is load-bearing rather than ceremonial: publish-image.yml tags the GHCR image from this field and GHCR tags are IMMUTABLE, so a rebuild at an existing version pushes nothing and the deploy silently keeps serving the previous bundle. It tracks the design system's minor deliberately — this repository holds no product version of its own worth tracking, and 1.1 here means 'consumes @cloudsforge/ui 1.1', which is the only question anybody asks of a frontend image in this estate.",
   "//test": "--import @cloudsforge/ui/test-loader replaces the 78-line test/react-dedupe.ts this repository used to carry. link: symlinks micro-ui's WORKING TREE, whose own node_modules holds the react it needs to test itself, and Node resolves a bare specifier from the importing file's REALPATH — so the design system's components find that second copy, share no dispatcher with ours, and every hook they call throws \"Cannot read properties of null (reading 'useState')\". Shipping dist did not change that: dist/index.js has the same realpath as src/index.tsx. It is vite's resolve.dedupe, supplied to the Node test loader, which has none of its own — and it now ships from the package that owns the second copy, resolving OUR react from process.cwd(). Delete the flag and the suite goes red, not quiet.",
   "//": "@cloudsforge/ui is consumed from a sibling path because it is not published yet. It becomes a registry version ('^1.0.0') the day it is, and nothing else here changes — the Dockerfile's uipkg build context and the second checkout in ci.yml go with it. The specifier is link: rather than file: because link: symlinks the working tree, so an edit in the design system is visible here without a republish; pnpm PACKS a file: directory instead, and a packed copy goes stale the moment micro-ui is touched. JSON has no comment syntax, hence this key.",
   "dependencies": {

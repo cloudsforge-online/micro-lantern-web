@@ -11,18 +11,70 @@
   accent tokens to the ember ramp in src/styles.css, for the reason tokens.css states
   verbatim. Naming some other key would have been the lazy way to get ember, and it would have
   been a lie about which surface this is.
+
+  data-cf-scheme is the third of the three, added with @cloudsforge/ui 1.1. `auto` follows the
+  reader's operating system; `light` and `dark` force one. It is set here, statically, for exactly
+  the reason the other two are — a page that paints before the attribute lands flashes the default
+  and then changes colour, and a theme flash is worse than a theme nobody asked for.
 -->
-<html lang="en-GB" data-cf-product="lantern" data-cf-substrate="warm">
+<html lang="en-GB" data-cf-product="lantern" data-cf-substrate="warm" data-cf-scheme="auto">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="colour-scheme" content="dark light" />
+    <!--
+      `color-scheme`, AND NOT `colour-scheme`, WHICH IS WHAT THIS FILE SHIPPED WITH.
+      ────────────────────────────────────────────────────────────────────────────────────────
+      There is no `colour-scheme` meta name in any specification. This estate's copy is British
+      throughout — the routes say "recognise", the tokens say "colour" — and the spelling leaked
+      into the one string where the language is not English but HTML. Every browser since this
+      surface shipped has parsed the tag, failed to recognise the name and ignored it, silently,
+      because an unknown meta name is not an error anywhere. So the console declared NOTHING about
+      which schemes it supports, which is not the same as declaring dark: the UA was left free to
+      draw its own default form controls and scrollbars over a page that had opinions about both.
+
+      Both schemes are declared, and the token layer is what actually switches them: this line
+      tells the browser which control and scrollbar sets to draw, and `data-cf-scheme` on <html>
+      above tells @cloudsforge/ui which palette to resolve.
+    -->
+    <meta name="color-scheme" content="dark light" />
     <!--
       The build that produced this bundle. Stamped by the Dockerfile, read by src/lib/obs.ts, and
       the reason an error report can be pinned to the deploy that introduced it. It is an identity
       rather than a configuration: it names the artefact, it does not tell it where it is running.
     -->
     <meta name="cf-release" content="dev" />
+    <!--
+      THE ANALYTICS TAG THAT IS DELIBERATELY NOT HERE, AND THIS IS THE DECISION RATHER THAN THE GAP.
+      ────────────────────────────────────────────────────────────────────────────────────────────
+      Every public surface in this estate carries a `cf-analytics` meta tag holding a GA4
+      measurement ID, which `@cloudsforge/ui/consent` reads at runtime. THIS SURFACE DOES NOT, AND
+      MUST NOT, and the next reader is meant to find that written down rather than infer it from an
+      absence and helpfully fix it.
+
+      Two facts about this console decide it. It is `adminOnly: true`
+      (ui/packages/ui/src/surfaces.ts), so nobody who is not an operator is on it at all; and
+      its request-lookup route carries the identifier in the QUERY STRING — `/request?id=…`, which
+      `src/lib/routes.ts` explains at length and `nginx.conf` depends on. GA4's default
+      `page_location` parameter is the full URL, query string included. So a single automatic
+      pageview from this page ships a live CloudsForge request id to Google, per lookup, for every
+      incident anybody works — estate identifiers, in a third party's logs, in exchange for
+      knowing how many times an operator opened a table. There is no measurement worth that, and
+      no amount of consent makes it a sensible trade for data that is not the reader's own.
+
+      The consent primitives are still wired below, and that is not an inconsistency: `main.tsx`
+      calls `initAnalytics()` and `components/shell.tsx` renders `<CookieBanner />`, both of which
+      do NOTHING without an ID. `analyticsId()` (ui/packages/ui/src/consent.ts) returns null
+      when the meta tag is absent, `initAnalytics()` then only primes Consent Mode with every
+      category denied — two pushes onto a plain array, no request, no cookie — and the banner
+      returns null rather than asking permission for something that will never happen. The wiring
+      is there so that this file is the ONLY place the decision lives, and so that turning it on
+      would be a deliberate edit here rather than a component nobody remembered to add.
+
+      And the script tag is never coming either, ID or no ID. Google's stock snippet fetches its
+      tag host and sets `_ga` on load, before any banner has been drawn, let alone answered; under
+      ePrivacy Art. 5(3) that is a violation a banner underneath does not cure. The one call site
+      that may inject it is the Accept button — see the header of `@cloudsforge/ui/consent`.
+    -->
     <!--
       Lantern carries `markId: null` in the registry (surfaces.ts), so no mark and no wordmark
       appear anywhere in this bundle. These are the company chrome, which a separate hostname needs

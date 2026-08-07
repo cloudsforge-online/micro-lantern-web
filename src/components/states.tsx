@@ -25,7 +25,7 @@ import type { ErrorNotice } from '../lib/api.ts'
 // Every optional prop is spelled `?: T | undefined`. Under `exactOptionalPropertyTypes` those are
 // two different types, and only the second one accepts the `value ?? undefined` a caller writes
 // when it may or may not have something to pass.
-export function Loading({ label = 'Loading' }: { label?: string | undefined }) {
+export function Loading({ label = 'Fetching' }: { label?: string | undefined }) {
   return (
     <div className="wt-state wt-state--loading" role="status" aria-live="polite">
       <span className="wt-spinner" aria-hidden="true" />
@@ -91,21 +91,22 @@ export function Refused({
         ⊘
       </span>
       <p className="wt-state__title">
-        {canSignIn ? 'Lantern needs a credential for this' : 'Lantern will not serve this to you'}
+        {canSignIn ? 'Lantern wants a credential' : 'Your credential is not enough'}
       </p>
       <p className="wt-state__hint">
         {canSignIn
-          ? 'The request was made without a credential Lantern could verify. Signing in again ' +
-            'issues a new one.'
-          : 'Your session is valid and this estate does not consider it an operator credential. ' +
-            'Signing in again would issue the same one, so there is no button here.'}
+          ? 'Nothing went out with this read that Lantern could check. Sign in and the page asks ' +
+            'again holding a token it can verify. Nothing was read, so nothing was lost.'
+          : 'The session is valid; this estate does not count it as an operator credential. ' +
+            'A second sign-in would mint the same token, which is why no button is offered here — ' +
+            'getting past this takes a change of role, not another attempt.'}
       </p>
       <p className="wt-state__meta">
-        Lantern answered <code className="cf-num ln-code">{notice.code ?? notice.status}</code>
+        Lantern replied <code className="cf-num ln-code">{notice.code ?? notice.status}</code>
         {notice.requestId && (
           <>
             {' '}
-            · request <code className="cf-num wt-reqid">{notice.requestId}</code>
+            · under request <code className="cf-num wt-reqid">{notice.requestId}</code>
           </>
         )}
       </p>
@@ -147,35 +148,39 @@ export function Failed({
       <span className="wt-state__icon" aria-hidden="true">
         ■
       </span>
-      <p className="wt-state__title">Could not load {what}</p>
+      <p className="wt-state__title">Lantern did not return {what}</p>
       <p className="wt-state__hint">{notice.message}</p>
+      <p className="wt-state__hint">
+        This screen only ever reads, so nothing was written and no telemetry was lost — the view is
+        short of one panel and that is all. Ask again, or take the id below to whoever is on call.
+      </p>
       <p className="wt-state__meta">
         {notice.code ? (
           <>
-            Lantern answered <code className="cf-num ln-code">{notice.code}</code>
+            It replied <code className="cf-num ln-code">{notice.code}</code>
           </>
         ) : notice.status !== undefined ? (
           <>
-            HTTP <code className="cf-num ln-code">{notice.status}</code>
+            The status was <code className="cf-num ln-code">{notice.status}</code>
           </>
         ) : (
           // No status and no code means the request never got an answer at all — the fetch threw.
           // Saying so is the difference between "Lantern is refusing" and "nothing replied".
-          <>The request did not reach Lantern</>
+          <>Nothing answered — the request never got as far as Lantern</>
         )}
         {notice.requestId ? (
           <>
             {' '}
-            · request <code className="cf-num wt-reqid">{notice.requestId}</code>
+            · under request <code className="cf-num wt-reqid">{notice.requestId}</code>
           </>
         ) : (
-          <> · no request id — Lantern never answered, so there is none to quote</>
+          <> · no request id to quote, because no response came back carrying one</>
         )}
       </p>
       {onRetry && (
         <div className="wt-state__action">
           <button type="button" className="cf-btn" onClick={onRetry}>
-            Try again
+            Ask again
           </button>
         </div>
       )}
@@ -194,17 +199,18 @@ export function SignInWall({ onSignIn }: { onSignIn: () => void }) {
   return (
     <section className="ln-wall" aria-labelledby="wall-title">
       <h1 className="ln-wall__title" id="wall-title">
-        Lantern is an operator surface
+        You need an operator session for this
       </h1>
       <p className="ln-wall__lede">
-        This console reads the estate's errors, log events and browser samples. Every one of those
-        reads is credentialled — Lantern refuses an anonymous request outright — and the surface
-        registry marks it <code className="cf-num ln-code">adminOnly</code>.
+        Everything here — the grouped faults, the raw log lines, the browser reports and the request
+        lookup — is read out of Lantern, and Lantern turns away any read that arrives without a
+        credential. The surface registry marks this console{' '}
+        <code className="cf-num ln-code">adminOnly</code> for the same reason.
       </p>
       <p className="ln-wall__lede">
-        Nothing has been requested on your behalf. You are not looking at a page that failed; you
-        are looking at a page that has not asked Lantern anything, because asking without a
-        credential can only produce a screen of refusals.
+        No request has gone out yet. This is not a page that broke; it is a page that has
+        deliberately asked for nothing, because asking without a token would fill the screen with
+        four refusals and teach you nothing.
       </p>
       <div className="ln-wall__action">
         <button type="button" className="cf-btn cf-btn--primary" onClick={onSignIn}>
@@ -212,8 +218,9 @@ export function SignInWall({ onSignIn }: { onSignIn: () => void }) {
         </button>
       </div>
       <p className="ln-wall__note">
-        Signing in returns you to this page. If Lantern still declines afterwards, it will say so
-        with its own code and a request id — that is a decision the service makes, not this page.
+        Signing in brings you back to this address. If Lantern still says no once you return, it
+        will show you the code it said no under and the request id it said it against. That call
+        belongs to the service, not to this page.
       </p>
     </section>
   )

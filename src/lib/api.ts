@@ -349,7 +349,10 @@ async function request<T>(base: string, path: string, opts: RequestOptions = {})
       stack: err instanceof Error ? (err.stack ?? null) : null,
       context: { method, url: url.toString() },
     })
-    throw new ApiError(0, 'Cannot reach the server. Check your connection and try again.')
+    throw new ApiError(
+      0,
+      'Lantern could not be reached at all. Nothing was sent and nothing was changed. Check the connection, then ask again.',
+    )
   }
 
   // One silent refresh and retry on expiry. Ten of these at once share one refresh.
@@ -360,7 +363,7 @@ async function request<T>(base: string, path: string, opts: RequestOptions = {})
       expireSession()
       throw new ApiError(
         401,
-        'Your session expired. Sign in again.',
+        'Your session has run out. Sign in and this page picks up where it left off.',
         'session_expired',
         res.headers.get('x-request-id') ?? undefined,
       )
@@ -371,7 +374,7 @@ async function request<T>(base: string, path: string, opts: RequestOptions = {})
     // Every service sets this header on every response, error or not, so it is present even when
     // the body is a proxy's HTML page rather than ours.
     let requestId = res.headers.get('x-request-id') ?? undefined
-    let message = res.statusText || `Request failed (${res.status})`
+    let message = res.statusText || `Lantern answered ${res.status} and said nothing more`
     let code: string | undefined
     try {
       const parsed = readErrorBody(await res.json())

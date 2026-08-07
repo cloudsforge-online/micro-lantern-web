@@ -47,7 +47,7 @@ export function EventsPage() {
   const events = useResource<EventsReply>(
     load,
     (data) => data.events.length,
-    'the event stream could not be read',
+    'Something in this bundle threw while reading the log lines, so Lantern never got a chance to answer.',
     [service, severity, sentTraceId, limit],
   )
 
@@ -58,12 +58,32 @@ export function EventsPage() {
     <section className="ln-page" aria-labelledby="events-title">
       <header className="ln-page__head">
         <h1 className="ln-page__title" id="events-title">
-          Events
+          Raw log lines
         </h1>
         <p className="ln-page__lede">
-          The raw log lines Lantern has ingested, newest first. Read from{' '}
-          <code className="cf-num ln-code">GET /v1/events</code>. Events are pruned at seven days;
-          the issues they were grouped into are kept for ninety.
+          One row per record, newest at the top, with no grouping of any kind. An event is a single
+          log line with its useful parts lifted into columns: the time, the service that wrote it,
+          the door it came in by, the message, and the request and trace ids that join it to
+          everything else. Faults among these are also filed under a fingerprint on the grouped
+          list; every other line exists only here. Read from{' '}
+          <code className="cf-num ln-code">GET /v1/events</code>.
+        </p>
+        <p className="ln-page__lede">
+          Severity is one of six words — <code className="cf-num ln-code">trace</code>,{' '}
+          <code className="cf-num ln-code">debug</code>, <code className="cf-num ln-code">info</code>,{' '}
+          <code className="cf-num ln-code">warn</code>, <code className="cf-num ln-code">error</code>,{' '}
+          <code className="cf-num ln-code">fatal</code> — worked out from the OTLP severity number
+          as the record is ingested. A producer that sets no severity number lands on{' '}
+          <code className="cf-num ln-code">info</code> and never on{' '}
+          <code className="cf-num ln-code">error</code>, so a forgetful service cannot manufacture an
+          issue per line.
+        </p>
+        <p className="ln-page__lede">
+          A line is deleted seven days after its own timestamp, by a sweep that runs hourly; the
+          window is the deploy's <code className="cf-num ln-code">LANTERN_EVENT_RETENTION_DAYS</code>.
+          Nothing is archived on the way out. What survives is what was derived: the hourly counts
+          per service and severity, which Lantern keeps for four hundred days, and the issues built
+          from the faults. The line itself is gone.
         </p>
         <div className="ln-filters" role="group" aria-label="Filter the event stream">
           <label className="ln-filter">
@@ -72,7 +92,7 @@ export function EventsPage() {
               className="ln-filter__input"
               type="text"
               value={service}
-              placeholder="any service"
+              placeholder="every service"
               onChange={(e) => setService(e.target.value.trim())}
             />
           </label>
@@ -83,7 +103,7 @@ export function EventsPage() {
               value={severity}
               onChange={(e) => setSeverity(e.target.value)}
             >
-              <option value="">any severity</option>
+              <option value="">every severity</option>
               {SEVERITIES.map((s) => (
                 <option key={s} value={s}>
                   {s}
@@ -97,13 +117,13 @@ export function EventsPage() {
               className="ln-filter__input ln-filter__input--wide cf-num"
               type="text"
               value={traceId}
-              placeholder="32 hex characters"
+              placeholder="32 hexadecimal characters"
               aria-invalid={!traceIdApplied}
               onChange={(e) => setTraceId(e.target.value.trim().toLowerCase())}
             />
           </label>
           <label className="ln-filter">
-            <span className="ln-filter__label">Limit</span>
+            <span className="ln-filter__label">Rows</span>
             <select
               className="ln-filter__input"
               value={limit}
@@ -119,47 +139,65 @@ export function EventsPage() {
         </div>
         {!traceIdApplied && (
           <Note tone="warn">
-            A trace id is 32 hexadecimal characters; this one is {traceId.length}. Lantern would
-            ignore it and return the unfiltered stream (`lantern/src/reads.ts`), so it has
-            not been sent — the rows below are NOT filtered by trace. Finish the id, or clear it.
+            Lantern will only match a trace id that is exactly 32 hexadecimal characters, and this
+            one is {traceId.length}. A short id is not an error there: the clause is dropped and the
+            whole stream comes back wearing a label that claims otherwise. So nothing has been sent.
+            Finish the id or empty the box; until then the rows below carry no trace filter at all.
           </Note>
         )}
       </header>
 
-      {events.state === 'loading' && <Loading label="Reading the event stream" />}
+      {events.state === 'loading' && <Loading label="Fetching the log lines" />}
       {events.state === 'refused' && events.error && (
         <Refused notice={events.error} onSignIn={() => signIn()} />
       )}
       {events.state === 'failed' && events.error && (
-        <Failed notice={events.error} what="the event stream" onRetry={events.reload} />
+        <Failed notice={events.error} what="the log lines" onRetry={events.reload} />
       )}
       {events.state === 'empty' && (
         <Empty
-          title={filtered ? 'No events match this filter' : 'No events'}
+          title={filtered ? 'Nothing matched' : 'The stream is empty'}
           hint={
             filtered
-              ? 'Lantern answered with an empty list for exactly the filter shown above. Widen it ' +
-                'and the request is re-sent.'
-              : 'Lantern has no events at all in its seven-day window. That is an answer, not a ' +
-                'failure — but if you expected traffic, the collector rather than this page is ' +
-                'the thing to check.'
+              ? 'Lantern ran the fields above exactly as they are set and found no line. Loosen ' +
+                'one of them and the request goes out again on its own — service and severity are ' +
+                'matched character for character, so a near miss returns nothing rather than a ' +
+                'complaint.'
+              : 'Lantern is holding no line at all inside its seven-day window. That is a real ' +
+                'answer rather than a failure, but no estate stays quiet for a week. If traffic ' +
+                'was expected, the OTLP collector sits between the services and this page, and it ' +
+                'is the thing to look at before anything here.'
           }
         />
       )}
 
+      {/*
+        The scroll belongs to the table, not to the document — the same wrapper, for the same
+        measured reason, as `pages/issues.tsx`, whose comment carries the full argument and the
+        numbers. Nine columns here rather than six, so this table is the wider of the two.
+
+        The comment sits ABOVE the conditional rather than immediately inside it, and that is not a
+        style preference: a braced JSX comment as the first thing after `{cond && (` does not
+        compile. Inside those parentheses the parser is reading an EXPRESSION, where a `{` opens an
+        object literal rather than a comment, and the error it produces — "Expression expected",
+        pointing at the closing brace of the component sixty lines below — names neither the
+        comment nor the line it is on. `pages/issues.tsx` places the same comment inside a fragment,
+        which IS children position, and compiles.
+      */}
       {events.state === 'ok' && (
+        <div className="ln-tablewrap" tabIndex={0} role="region" aria-labelledby="events-caption">
         <table className="ln-table">
-          <caption className="ln-table__caption">
-            {rows.length} {rows.length === 1 ? 'event' : 'events'}
-            {filtered ? ', matching the filter above' : ', unfiltered'}
+          <caption className="ln-table__caption" id="events-caption">
+            {rows.length} {rows.length === 1 ? 'line' : 'lines'}
+            {filtered ? ', drawn under the fields above' : ', with no filter applied'}
           </caption>
           <thead>
             <tr>
-              <th scope="col">When</th>
+              <th scope="col">Time</th>
               <th scope="col">Severity</th>
               <th scope="col">Service</th>
               <th scope="col">Message</th>
-              <th scope="col">Request</th>
+              <th scope="col">Request id</th>
               <th scope="col">Latency</th>
             </tr>
           </thead>
@@ -187,13 +225,16 @@ export function EventsPage() {
                   {event.request_id ? (
                     <Id value={event.request_id} />
                   ) : (
-                    <Maybe value={null} missing="no request id — not emitted inside a request" />
+                    <Maybe
+                      value={null}
+                      missing="none: written outside any request, so there is nothing to join on"
+                    />
                   )}
                 </td>
                 <td className="cf-num">
                   <Maybe
                     value={millis(event.latency_ms)}
-                    missing="not a timed operation"
+                    missing="nothing was timed here"
                   />
                   {event.status_code !== null && (
                     <span className="ln-hint">HTTP {event.status_code}</span>
@@ -203,6 +244,7 @@ export function EventsPage() {
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </section>
   )

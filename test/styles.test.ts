@@ -16,6 +16,22 @@
  *    and it must be var() indirection — writing `#e8622c` here would satisfy the eye and break
  *    rule 1, which is how a design system quietly becomes a suggestion.
  * ══════════════════════════════════════════════════════════════════════════════════════════════
+ *
+ * ── THE PINNED CITATION BELOW MOVED, AND DELETING IT WAS NEVER AN OPTION ──────────────────────
+ *
+ * `cites the instruction it is following` asserts that src/styles.css names a LINE NUMBER in
+ * @cloudsforge/ui, which looks like a test guaranteed to rot and is the opposite: it is the only
+ * thing in this repository that can notice the rot. It said `594-596` and every one of the four
+ * citations above said something equally wrong — 594-596 landed in a paragraph about which four
+ * hues survive deuteranopia in a scatter plot, `111` in the motion tokens — because the design
+ * system grew a light scheme, a severity text ramp and eleven product blocks underneath them.
+ *
+ * All five were re-read from source on 2026-08-06 and moved together. The quoted sentence itself
+ * was unchanged, which is exactly why this went unnoticed: the QUOTATION stayed true while every
+ * POINTER to it rotted, so nothing a human reads casually looked wrong. The correct response to
+ * that is to re-aim the assertion, never to relax it into matching `tokens.css:\d+` — a test that
+ * accepts any number accepts the wrong one, and this file's whole subject is a design system that
+ * must not become a suggestion.
  */
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
@@ -63,6 +79,42 @@ describe('the page names a declared product block', () => {
     // block at tokens.css, so naming it is both honest and safe.
     assert.match(HTML, /data-cf-product="lantern"/)
     assert.match(HTML, /data-cf-substrate="warm"/)
+  })
+
+  it('declares the scheme the token layer switches on, spelled the way the standard spells it', () => {
+    /*
+     * The third attribute, and the meta tag beside it. Both are asserted here rather than trusted,
+     * because the failure mode of each is SILENCE: an unknown `data-` attribute selects nothing
+     * and an unknown meta name is ignored, so a page missing either renders, passes every other
+     * check in this suite, and is simply wrong in one scheme.
+     *
+     * `colour-scheme` is what this file shipped with — correct English, and INERT. No browser has
+     * ever parsed that name. The negative assertion is the one that has teeth: this estate's copy
+     * is British throughout, so the misspelling is the natural thing for the next writer to type
+     * back in while "fixing" the Americanism, and it would fail closed and silently again.
+     */
+    assert.match(HTML, /data-cf-scheme="auto"/)
+    assert.match(HTML, /<meta name="color-scheme" content="dark light"/)
+    assert.doesNotMatch(HTML, /name="colour-scheme"/)
+  })
+
+  it('leaves the scheme to the token layer — no local color-scheme, no local light block', () => {
+    /*
+     * `color-scheme: dark` was declared on `body` here and had to go: it overrode
+     * `data-cf-scheme="auto"` for the two things the property actually controls — the UA's form
+     * controls and its scrollbars — so a reader on a light desktop got the light palette from the
+     * token layer with a dark date picker and dark scrollbars nailed to it.
+     *
+     * The `prefers-color-scheme` half is the defect `site` shipped rather than one this surface
+     * did: a local media query redeclaring semantic tokens WINS over the shared layer for whichever
+     * properties it names, producing a page that is half one scheme and half the other. Asserted
+     * as an absence so that adding one is a deliberate argument with this comment.
+     *
+     * Matched against CODE, not CSS: the block that replaced the declaration explains at length
+     * what it replaced, and quotes it.
+     */
+    assert.doesNotMatch(CODE, /color-scheme\s*:/)
+    assert.doesNotMatch(CODE, /prefers-color-scheme/)
   })
 })
 
