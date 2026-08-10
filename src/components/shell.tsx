@@ -40,6 +40,7 @@ import {
   CookieBanner,
   MainRegion,
   SkipLink,
+  SubNav,
   miningOnHub,
 } from '@cloudsforge/ui'
 import { applyHead, normalisePath, surfaceMeta } from '@cloudsforge/ui/seo'
@@ -96,23 +97,41 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
         mining={miningOnHub(hosts().hub)}
       />
       {/*
-        The sub-nav is sticky at exactly `var(--cf-bar-h)` — the bar's own height token, not a
-        number copied out of it. When the bar's height changes, this moves with it.
+        The sub-nav is `SubNav` from @cloudsforge/ui and is no longer declared here.
+
+        WHAT IT REPLACES. Measured 2026-08-10: ten frontends declared this strip in their own
+        stylesheet under six class prefixes, from what was plainly one original that had been
+        copied and then edited in place — the census is in `ui/packages/ui/src/subnav.test.ts`.
+        This copy carried two of the three drifts it names, and one of them worse than the census
+        predicted: `.ln-subnav__inner` set `max-width: 84rem`, which is 1344px against the bar's
+        and the footer's 1200px, so the second row of the header sat 72px proud of the first on
+        each side on every screen wide enough to show it. It also wrote its measure, its gutter,
+        its gap and its padding as literals, which is why the sections read at 14.4px under a bar
+        whose own controls read at 14px and a body step that had been raised to 16px.
+
+        The links stay here, and that is the component's own argument: routing is react-router's
+        `NavLink`, which owns the active state, and the design system does not depend on
+        react-router. What moved is the STRIP — the sticky offset at `var(--cf-bar-h)`, the
+        measure, the scroll behaviour and the type.
+
+        The `label` keeps this surface's own wording. Two `<nav>` landmarks with the same
+        accessible name are two landmarks a screen reader user cannot tell apart, so the wording
+        is deliberately per-surface and was not homogenised with the strip.
       */}
-      <nav className="ln-subnav" aria-label="Sections">
-        <div className="ln-subnav__inner">
-          {NAV.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              end={item.path === '/'}
-              className={({ isActive }) => `ln-subnav__link${isActive ? ' is-active' : ''}`}
-            >
-              {item.label}
-            </NavLink>
-          ))}
-        </div>
-      </nav>
+      <SubNav label="Sections">
+        {NAV.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            end={item.path === '/'}
+            className={({ isActive }) =>
+              `cf-subnav__link${isActive ? ' cf-subnav__link--current' : ''}`
+            }
+          >
+            {item.label}
+          </NavLink>
+        ))}
+      </SubNav>
       <DocumentMeta />
       <MainRegion className="ln-main">
         {/*
