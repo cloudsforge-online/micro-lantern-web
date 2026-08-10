@@ -81,65 +81,79 @@ body {
  * page scrolled and focus never moved.
  */
 
-.ln-subnav {
-  position: sticky;
-  /* The bar's own height token, not a number copied out of it. */
-  top: var(--cf-bar-h);
-  z-index: 10;
-  background: var(--cf-surface);
-  border-bottom: 1px solid var(--cf-line);
-}
-.ln-subnav__inner {
-  display: flex;
-  gap: 0.25rem;
-  max-width: 84rem;
-  margin: 0 auto;
-  padding: 0 1.25rem;
-  overflow-x: auto;
-}
-.ln-subnav__link {
-  display: inline-block;
-  padding: 0.75rem 0.9rem;
-  color: var(--cf-ink-2);
-  text-decoration: none;
-  border-bottom: 2px solid transparent;
-  white-space: nowrap;
-}
-.ln-subnav__link:hover {
-  color: var(--cf-ink);
-}
-.ln-subnav__link.is-active {
-  color: var(--cf-accent-text);
-  border-bottom-color: var(--cf-accent);
-}
-.ln-subnav__link:focus-visible {
-  outline: 2px solid var(--cf-accent);
-  outline-offset: -2px;
-}
+/*
+ * `.ln-subnav`, `.ln-subnav__inner`, `.ln-subnav__link`, `:hover`, `.is-active` and
+ * `:focus-visible` WERE HERE. They are gone with the markup they styled: the shell renders
+ * `<SubNav>` from @cloudsforge/ui, which brings `.cf-subnav*` from ui.css — see the note in
+ * src/components/shell.tsx.
+ *
+ * The deletion is the point rather than a tidy-up. Measured 2026-08-10, ten frontends carried this
+ * strip under six class prefixes from one original, and every copy had drifted; the census is in
+ * `ui/packages/ui/src/subnav.test.ts`. A private copy left beside the shared one is how there came
+ * to be ten.
+ *
+ * WHAT THIS COPY HAD, recorded because the numbers are the argument:
+ *   - `max-width: 84rem` — 1344px against the 1200px `.cf-bar__inner` and `.cf-foot__inner` take
+ *     from `--cf-max-w`. The second row of the header sat 72px proud of the first on each side.
+ *   - Its gap, its gutter and its link padding were literals, so none of them moved when the scale
+ *     did, and `.ln-subnav__link` inherited a body size the token layer had raised without it.
+ *   - `.ln-subnav__link.is-active` marked the current section in ink and underline only, where the
+ *     estate's rule is three channels. `.cf-subnav__link--current` adds the weight.
+ * What it got right, so nobody reads the adoption as a rescue: it already scrolled, and it already
+ * drew its focus ring inside the scroll container with `outline-offset: -2px`, which is what the
+ * shared rule does for the same reason.
+ */
 
 .ln-main {
-  max-width: 84rem;
+  /*
+   * `84rem` — 1344px — was here, and the bar and the footer above and below it take 1200px from
+   * `--cf-max-w`. The page content was 144px wider than its own chrome, so every heading on this
+   * console started 72px to the left of the wordmark over it. Measured 2026-08-10; the token is
+   * the design system's, and there is deliberately no local one.
+   */
+  max-width: var(--cf-max-w);
   margin: 0 auto;
-  padding: 1.5rem 1.25rem 4rem;
+  /*
+   * AND THE HALF THAT `max-width` ALONE DOES NOT BUY, measured in Chromium at a 1600px viewport on
+   * 2026-08-10 while writing the assertion in test/footer-browser.test.ts.
+   *
+   * With `max-width: var(--cf-max-w)` and a `padding-inline` and NO `box-sizing`, this box's
+   * 1200px is its CONTENT and the 16px gutter is added outside it — border box 1232, left edge at
+   * 184 against `.cf-bar__inner`'s 200. The measure would still have been 32px wider than the
+   * chrome, which is the very defect being closed, merely smaller than the 144px it started at.
+   * `.cf-bar__inner` and `.cf-subnav__inner` both carry this declaration in ui.css for the same
+   * reason, and ui.css has no global reset to inherit it from.
+   */
+  box-sizing: border-box;
+  /*
+   * `4rem` — 64px — is the one length in this file with no step to go to: the scale tops out at
+   * `--cf-space-3xl` (32px) and half of 64 is not what this padding is for. It is the run-out
+   * under the last panel before the footer, not rhythm between two things, so it is left as a
+   * literal rather than halved or spelled as a calc() over a token it is not a multiple of by
+   * intent.
+   */
+  padding: var(--cf-space-2xl) var(--cf-space-xl) 4rem;
 }
 
 .ln-page__head {
-  margin-bottom: 1.25rem;
+  margin-bottom: var(--cf-space-xl);
 }
 .ln-page__title {
   font-family: var(--cf-font-display);
-  font-size: 1.6rem;
-  margin: 0 0 0.4rem;
+  font-size: var(--cf-text-2xl);
+  margin: 0 0 var(--cf-space-xs);
   color: var(--cf-ink);
 }
 .ln-page__lede {
-  margin: 0 0 0.9rem;
+  margin: 0 0 var(--cf-space-xl);
+  /* A reading measure, not spacing: 62 characters is a line length, and there is no step on the
+     spacing scale that means "a line of prose". Left as it is on purpose. */
   max-width: 62ch;
   color: var(--cf-ink-2);
   line-height: 1.55;
 }
 .ln-page__count {
-  margin: 0 0 0.6rem;
+  margin: 0 0 var(--cf-space-md);
 }
 
 /* ---- filters ------------------------------------------------------------------------------ */
@@ -147,25 +161,27 @@ body {
 .ln-filters {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
+  gap: var(--cf-space-lg);
   align-items: flex-end;
 }
 .ln-filter {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: var(--cf-space-2xs);
 }
 .ln-filter--grow {
+  /* A flex basis: layout, not rhythm. It is how wide this field WANTS to be before the row wraps,
+     and the spacing scale tops out at 32px. Left alone deliberately. */
   flex: 1 1 24rem;
 }
 .ln-filter__label {
-  font-size: 0.78rem;
+  font-size: var(--cf-text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--cf-ink-3);
 }
 .ln-filter__input {
-  padding: 0.45rem 0.6rem;
+  padding: var(--cf-space-sm) var(--cf-space-md);
   background: var(--cf-surface-2);
   color: var(--cf-ink);
   border: 1px solid var(--cf-line);
@@ -198,7 +214,7 @@ body {
 }
 .ln-lookup {
   display: flex;
-  gap: 0.75rem;
+  gap: var(--cf-space-lg);
   align-items: flex-end;
 }
 
@@ -207,15 +223,19 @@ body {
 .ln-badge {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.35rem;
-  padding: 0.15rem 0.5rem;
+  gap: var(--cf-space-xs);
+  padding: var(--cf-space-3xs) var(--cf-space-sm);
   border-radius: var(--cf-radius);
   border: 1px solid var(--cf-line);
   background: var(--cf-surface-2);
-  font-size: 0.82rem;
+  font-size: var(--cf-text-xs);
   white-space: nowrap;
 }
 .ln-badge__glyph {
+  /* An `em`, and it stays one. This is the standing optical correction for a glyph set beside a
+     word — the glyph runs large at the same computed size — and the correction has to be RELATIVE
+     to whatever the badge is set in. A scale step is absolute by definition and would pin the
+     glyph to one size regardless of its badge. */
   font-size: 0.9em;
 }
 /*
@@ -322,26 +342,34 @@ body {
 .ln-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.92rem;
+  /*
+   * 0.92rem is 14.72px, and the nearest step is `--cf-text-sm` at 14 (0.72 away) rather than
+   * `--cf-text-md` at 16 (1.28 away). Recorded because it is the one judgement call in this sweep
+   * that a reader could reasonably want the other way: `--cf-text-md`'s own comment in tokens.css
+   * names "cells" as the body step. Nearest-step is the rule this pass was run under and this
+   * declaration follows it; moving the tables to 16px is a density decision about six- and
+   * nine-column tables and belongs in its own change, with its own measurement at a phone width.
+   */
+  font-size: var(--cf-text-sm);
 }
 .ln-table__caption {
   text-align: left;
-  padding-bottom: 0.5rem;
+  padding-bottom: var(--cf-space-sm);
   color: var(--cf-ink-3);
-  font-size: 0.85rem;
+  font-size: var(--cf-text-sm);
 }
 .ln-table th {
   text-align: left;
-  padding: 0.5rem 0.6rem;
+  padding: var(--cf-space-sm) var(--cf-space-md);
   border-bottom: 1px solid var(--cf-line);
   color: var(--cf-ink-3);
   font-weight: 600;
-  font-size: 0.78rem;
+  font-size: var(--cf-text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 .ln-table td {
-  padding: 0.6rem;
+  padding: var(--cf-space-md);
   border-bottom: 1px solid var(--cf-line-2, var(--cf-line));
   vertical-align: top;
   color: var(--cf-ink);
@@ -359,12 +387,12 @@ body {
 .ln-issue__fp,
 .ln-event__type {
   display: block;
-  font-size: 0.82rem;
+  font-size: var(--cf-text-xs);
   color: var(--cf-ink-3);
 }
 .ln-hint {
   display: block;
-  font-size: 0.8rem;
+  font-size: var(--cf-text-xs);
   color: var(--cf-ink-3);
 }
 
@@ -376,7 +404,7 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: var(--cf-space-xs);
 }
 .ln-sample {
   border: 1px solid var(--cf-line);
@@ -387,8 +415,8 @@ body {
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0.6rem;
-  padding: 0.6rem 0.8rem;
+  gap: var(--cf-space-md);
+  padding: var(--cf-space-md) var(--cf-space-lg);
   cursor: pointer;
 }
 .ln-sample__summary:focus-visible {
@@ -399,28 +427,29 @@ body {
   color: var(--cf-accent-text);
 }
 .ln-sample__headline {
+  /* A flex basis: layout, not rhythm. Left alone, like `.ln-filter--grow`'s. */
   flex: 1 1 20rem;
   color: var(--cf-ink);
 }
 .ln-sample__body {
-  padding: 0.2rem 0.8rem 0.9rem;
+  padding: var(--cf-space-2xs) var(--cf-space-lg) var(--cf-space-xl);
   border-top: 1px solid var(--cf-line);
 }
 .ln-sample__stackTitle {
-  font-size: 0.8rem;
+  font-size: var(--cf-text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--cf-ink-3);
-  margin: 0.9rem 0 0.35rem;
+  margin: var(--cf-space-xl) 0 var(--cf-space-xs);
 }
 .ln-stack {
   margin: 0;
-  padding: 0.6rem 0.7rem;
+  padding: var(--cf-space-md) var(--cf-space-lg);
   background: var(--cf-surface-2);
   border: 1px solid var(--cf-line);
   border-radius: var(--cf-radius);
   color: var(--cf-ink-2);
-  font-size: 0.82rem;
+  font-size: var(--cf-text-xs);
   /* Wrapped, never truncated: a stack that scrolls sideways is a stack nobody reads past frame
      one, and frame one is the least interesting frame. */
   white-space: pre-wrap;
@@ -431,24 +460,26 @@ body {
 
 .ln-facts {
   display: grid;
+  /* A grid track, not spacing: `16rem` is the narrowest a fact column may be before the grid drops
+     to fewer of them. Left alone. */
   grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
-  gap: 0.5rem 1.2rem;
-  margin: 0.6rem 0 0;
+  gap: var(--cf-space-sm) var(--cf-space-xl);
+  margin: var(--cf-space-md) 0 0;
 }
 .ln-facts--head {
-  margin-bottom: 1.2rem;
+  margin-bottom: var(--cf-space-xl);
 }
 .ln-facts--tight {
-  gap: 0.25rem 1.2rem;
+  gap: var(--cf-space-2xs) var(--cf-space-xl);
 }
 .ln-fact__label {
-  font-size: 0.76rem;
+  font-size: var(--cf-text-xs);
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--cf-ink-3);
 }
 .ln-fact__value {
-  margin: 0 0 0.35rem;
+  margin: 0 0 var(--cf-space-xs);
   color: var(--cf-ink);
   word-break: break-word;
 }
@@ -458,6 +489,8 @@ body {
 }
 .ln-id,
 .ln-code {
+  /* An `em`, and it stays one, for the same reason as `.ln-badge__glyph`: this is the optical
+     correction for mono set inside prose, and it has to be relative to the prose around it. */
   font-size: 0.85em;
   color: var(--cf-ink-2);
   word-break: break-all;
@@ -470,7 +503,7 @@ body {
   color: var(--cf-ink);
 }
 .ln-when__abs {
-  font-size: 0.76rem;
+  font-size: var(--cf-text-xs);
   color: var(--cf-ink-3);
 }
 .ln-link {
@@ -485,10 +518,10 @@ body {
 
 .ln-note {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--cf-space-sm);
   align-items: flex-start;
-  margin: 0 0 1rem;
-  padding: 0.6rem 0.8rem;
+  margin: 0 0 var(--cf-space-xl);
+  padding: var(--cf-space-md) var(--cf-space-lg);
   border: 1px solid var(--cf-line);
   border-left-width: 3px;
   border-radius: var(--cf-radius);
@@ -507,35 +540,42 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.4rem;
+  gap: var(--cf-space-xs);
   text-align: center;
-  padding: 2.5rem 1.5rem;
+  /*
+   * The biggest single move in this sweep: 2.5rem is 40px and the nearest step is
+   * `--cf-space-3xl` at 32, which is the top of the scale — 8px, 20%. Taken rather than left,
+   * because an empty state is the one panel on this console whose inset nobody has ever measured
+   * against anything, and 40 was picked by eye. The horizontal 1.5rem was already exactly 24.
+   */
+  padding: var(--cf-space-3xl) var(--cf-space-2xl);
   border: 1px dashed var(--cf-line);
   border-radius: var(--cf-radius);
   background: var(--cf-surface);
 }
 .wt-state__icon {
-  font-size: 1.6rem;
+  font-size: var(--cf-text-2xl);
   color: var(--cf-ink-3);
 }
 .wt-state__title {
   margin: 0;
-  font-size: 1.05rem;
+  font-size: var(--cf-text-md);
   color: var(--cf-ink);
 }
 .wt-state__hint {
   margin: 0;
+  /* A reading measure, like `.ln-page__lede`'s. Not spacing; left alone. */
   max-width: 58ch;
   color: var(--cf-ink-2);
   line-height: 1.55;
 }
 .wt-state__meta {
-  margin: 0.3rem 0 0;
+  margin: var(--cf-space-2xs) 0 0;
   color: var(--cf-ink-3);
-  font-size: 0.85rem;
+  font-size: var(--cf-text-sm);
 }
 .wt-state__action {
-  margin-top: 0.6rem;
+  margin-top: var(--cf-space-md);
 }
 .wt-state--failed {
   border-style: solid;
@@ -550,6 +590,8 @@ body {
   color: var(--cf-ink);
 }
 .wt-spinner {
+  /* A fixed icon box, not spacing. 1.1rem is the diameter of a glyph-sized disc and there is no
+     step on the spacing scale that means "as tall as a line of text". Left alone. */
   width: 1.1rem;
   height: 1.1rem;
   border: 2px solid var(--cf-line);
@@ -571,30 +613,38 @@ body {
 /* ---- the sign-in wall ---------------------------------------------------------------------- */
 
 .ln-wall {
+  /* A reading measure. Not spacing; left alone. */
   max-width: 56ch;
+  /*
+   * `3rem` — 48px — is left as a literal, and it is the second of the two lengths in this file
+   * with nowhere to go. The scale tops out at `--cf-space-3xl` (32px) and 48 is a step and a half
+   * past it; snapping it to 32 would lift the sign-in wall 16px up the page to satisfy a rule
+   * about rhythm between adjacent elements, which is not what this is. Reported rather than
+   * forced.
+   */
   margin: 3rem auto;
-  padding: 2rem;
+  padding: var(--cf-space-3xl);
   border: 1px solid var(--cf-line);
   border-radius: var(--cf-radius);
   background: var(--cf-surface);
 }
 .ln-wall__title {
   font-family: var(--cf-font-display);
-  font-size: 1.5rem;
-  margin: 0 0 0.8rem;
+  font-size: var(--cf-text-2xl);
+  margin: 0 0 var(--cf-space-lg);
   color: var(--cf-ink);
 }
 .ln-wall__lede {
-  margin: 0 0 0.8rem;
+  margin: 0 0 var(--cf-space-lg);
   color: var(--cf-ink-2);
   line-height: 1.6;
 }
 .ln-wall__action {
-  margin: 1.2rem 0 0.8rem;
+  margin: var(--cf-space-xl) 0 var(--cf-space-lg);
 }
 .ln-wall__note {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: var(--cf-text-sm);
   color: var(--cf-ink-3);
   line-height: 1.55;
 }
@@ -607,10 +657,10 @@ body {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.6rem;
+  gap: var(--cf-space-md);
 }
 .ln-routes__item {
-  padding: 0.6rem 0.8rem;
+  padding: var(--cf-space-md) var(--cf-space-lg);
   border: 1px solid var(--cf-line);
   border-radius: var(--cf-radius);
   background: var(--cf-surface);

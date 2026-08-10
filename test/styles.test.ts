@@ -72,6 +72,109 @@ describe('the stylesheet', () => {
   })
 })
 
+describe('the sub-nav is the design system’s, and there is no second copy of it here', () => {
+  /*
+   * The same shape `micro-explorer-web/test/tokens.test.ts` uses for the shared form controls, for
+   * the same reason and off the same census.
+   *
+   * Measured 2026-08-10: ten frontends declared the section strip in their own stylesheet under six
+   * class prefixes, from what was plainly one original — `ui/packages/ui/src/subnav.test.ts` holds
+   * the count. This repository's copy carried the measure defect worse than the census predicted:
+   * `.ln-subnav__inner` set `max-width: 84rem`, 1344px against the 1200px `.cf-bar__inner` and
+   * `.cf-foot__inner` take from `--cf-max-w`, so the row of sections sat 72px proud of the bar on
+   * each side. Its gap, gutter and link padding were literals, and `.ln-subnav__link.is-active`
+   * marked the current section in two channels where the estate's rule is three.
+   *
+   * BOTH halves are asserted, and that is the point of the shape. The shared classes must EXIST,
+   * because a `className` naming a class ui.css does not declare fails as silently as an undefined
+   * custom property — which is the failure the top of this file is about. And the local block must
+   * be GONE, because a private copy left beside the shared one is how there came to be ten.
+   */
+  const UI = readFileSync(
+    new URL('../node_modules/@cloudsforge/ui/dist/ui.css', import.meta.url),
+    'utf8',
+  )
+
+  it('the shared sub-nav exists', () => {
+    const declared = new Set([...UI.matchAll(/\.(cf-[a-z0-9_-]+)/g)].map((m) => m[1] ?? ''))
+    for (const present of [
+      'cf-subnav',
+      'cf-subnav__inner',
+      'cf-subnav__link',
+      'cf-subnav__link--current',
+    ]) {
+      assert.ok(declared.has(present), `.${present} is missing from ui.css`)
+    }
+  })
+
+  it('still sticks to the bar’s own height token, never a number copied out of it', () => {
+    // The assertion did not weaken when the rule moved; it followed it. `--cf-bar-h` was read by
+    // exactly one rule in src/styles.css — the sticky offset — and that rule is `.cf-subnav`'s now.
+    const rule = /(^|\n)\.cf-subnav\s*\{([^}]*)\}/.exec(UI)
+    assert.ok(rule, 'ui.css declares no `.cf-subnav` rule')
+    assert.match(rule[2] ?? '', /top:\s*var\(--cf-bar-h\)/)
+  })
+
+  it('the local copy is gone, not merely unused', () => {
+    // Against CODE, which has had its comments stripped: the note explaining the deletion
+    // necessarily spells the old class names.
+    const survivors = [...CODE.matchAll(/\.ln-subnav[a-z0-9_-]*/g)].map((m) => m[0])
+    assert.deepEqual(
+      survivors,
+      [],
+      `src/styles.css still declares ${survivors.join(', ')}; the strip is SubNav's now`,
+    )
+    // And the modifier really did move: `is-active` was this repository's spelling of the current
+    // section and the shared one is `cf-subnav__link--current`. Nothing else here used it, so this
+    // one can be absolute.
+    assert.doesNotMatch(CODE, /\.is-active\b/, 'the local current-section modifier is back')
+  })
+})
+
+describe('the type scale is used rather than approximated', () => {
+  /*
+   * The rule that keeps the next literal out, and the reason it is worth a test rather than a
+   * review comment.
+   *
+   * Measured 2026-08-10: this file spent SEVENTEEN literal `font-size` declarations and not one
+   * token, from 0.76rem to 1.6rem, none of which moved when `--cf-text-md` was raised from 0.82rem
+   * to 1rem — the note is beside the token in tokens.css. That is how a console ends up with body
+   * copy at 12.2px underneath chrome the design system sets at 14 and 16, with nothing anywhere
+   * recording that it had happened. A number typed into a stylesheet is invisible to every check
+   * that reads the design system.
+   */
+  it('spends no literal rem or px font-size', () => {
+    const literals = [...CODE.matchAll(/font-size:\s*[0-9.]+(?:rem|px)/g)].map((m) => m[0])
+    assert.deepEqual(
+      literals,
+      [],
+      `src/styles.css sets ${literals.join(', ')}; the scale cannot reach those`,
+    )
+  })
+
+  it('allows the two `em` corrections, and says why they are not the same thing', () => {
+    /*
+     * `.ln-badge__glyph` and `.ln-id, .ln-code` are RELATIVE, which is the whole reason they stay:
+     * a glyph beside a word and mono inside prose both run large at the same computed size, and
+     * the correction has to scale with whatever surrounds them. A scale step is absolute by
+     * definition and would pin them to one size regardless of context.
+     *
+     * Asserted as a positive rather than left silent, so that the sweep above cannot be satisfied
+     * by deleting them, and so that a third one appearing is a deliberate argument with this
+     * comment rather than a quiet exception.
+     */
+    const relative = [...CODE.matchAll(/font-size:\s*[0-9.]+em/g)].map((m) => m[0])
+    assert.equal(relative.length, 2, `expected exactly two em corrections, found ${relative.length}`)
+  })
+
+  it('takes its measure from the shared token, so the page lines up with the chrome', () => {
+    // `.ln-main` said `84rem` — 1344px — while the bar and the footer take 1200px from
+    // `--cf-max-w`. Every heading on this console started 72px left of the wordmark above it.
+    assert.match(CODE, /\.ln-main\s*\{[^}]*max-width:\s*var\(--cf-max-w\)/)
+    assert.doesNotMatch(CODE, /max-width:\s*[0-9.]+rem/, 'a container measure is a literal again')
+  })
+})
+
 describe('the page names a declared product block', () => {
   it('sets data-cf-product to the real registry key', () => {
     // tokens.css says every key an app may set is declared, precisely so a surface cannot

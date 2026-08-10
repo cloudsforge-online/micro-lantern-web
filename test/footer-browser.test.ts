@@ -252,6 +252,126 @@ describe('the estate sign-on this console is part of', () => {
   })
 })
 
+describe('the second row of the header', () => {
+  it('renders the SHARED section strip, not a private copy of it', async () => {
+    /*
+     * The assertion that would have caught the defect the sub-nav census was run for, and it
+     * reads the DOM rather than the source, because the source is the half that already passed.
+     *
+     * Measured 2026-08-10: ten frontends declared this strip in their own stylesheet, and nine of
+     * the ten had a `display: flex` row with neither `white-space: nowrap` nor `overflow-x: auto`
+     * — so six labels on a phone squeezed, broke mid-word, and the ones past the edge could not be
+     * reached at all. This copy scrolled, but it also set `max-width: 84rem` against the bar's
+     * 1200px, which put the row 72px proud of the bar on each side on every wide screen.
+     *
+     * `test/styles.test.ts` asserts that `.cf-subnav*` exists in ui.css and that `.ln-subnav*` is
+     * gone from src/styles.css. Both of those pass perfectly well against a shell that renders a
+     * `<nav>` with NO CLASS ON IT AT ALL — which is exactly what a half-finished adoption looks
+     * like, and exactly the state in which the strip on screen is unstyled rather than shared. So
+     * what is asserted here is the strip a reader actually meets.
+     */
+    const surface = await startSurface()
+    const session = await renderOnlyWithStubbedNetwork(surface.origin, {
+      path: '/',
+      stubs: [portal(true), REDEEM, PORTAL_FAVICON, ...READS],
+    })
+    try {
+      await assertMounted(session, { showing: ['Grouped faults'] })
+
+      const strip = await session.page.evaluate(() => {
+        const shared = document.querySelector('nav.cf-subnav')
+        const links = [...(shared?.querySelectorAll('a') ?? [])]
+        return {
+          exists: Boolean(shared),
+          label: shared?.getAttribute('aria-label') ?? null,
+          hasInner: Boolean(shared?.querySelector('.cf-subnav__inner')),
+          linkCount: links.length,
+          // Every anchor in the strip, not merely the ones carrying the class: a link left on the
+          // old name shows up here as a `false`.
+          allShared: links.every((a) => a.classList.contains('cf-subnav__link')),
+          current: links.filter((a) => a.classList.contains('cf-subnav__link--current')).length,
+          stale: links.filter((a) => a.classList.contains('is-active')).length,
+          privateCopies: document.querySelectorAll('[class*="ln-subnav"]').length,
+        }
+      })
+
+      assert.equal(strip.exists, true, 'no <nav class="cf-subnav"> in the document')
+      assert.equal(strip.hasInner, true, 'the shared strip has no .cf-subnav__inner scroll box')
+      // This surface's own wording, deliberately not homogenised with the strip: a document with
+      // two `<nav>`s — the company bar is the other — needs two names a reader can tell apart.
+      assert.equal(strip.label, 'Sections')
+      assert.ok(strip.linkCount >= 2, `the strip rendered ${strip.linkCount} links`)
+      assert.equal(strip.allShared, true, 'a section link is not on the shared class')
+      assert.equal(strip.current, 1, `${strip.current} sections are marked current`)
+      assert.equal(strip.stale, 0, 'a section link still carries the local `is-active` modifier')
+      assert.equal(strip.privateCopies, 0, 'the local .ln-subnav markup is back in the document')
+    } finally {
+      await session.close()
+    }
+  })
+
+  it('is the same measure as the bar above it, which it was not', async () => {
+    /*
+     * Defect 2, measured on the page instead of read out of a stylesheet.
+     *
+     * `.ln-subnav__inner` and `.ln-main` both said `max-width: 84rem` — 1344px — while
+     * `.cf-bar__inner` takes 1200px from `--cf-max-w`. On a screen wide enough to show it, the
+     * second row of the header and every heading on the page began 72px to the left of the
+     * wordmark above them. A stylesheet grep cannot see this: three rules can name three different
+     * tokens and still agree, or name one token and disagree because a container constrains one of
+     * them. Left edges are compared as the browser computed them.
+     *
+     * ── THE FOOTER IS NOT IN THIS ASSERTION, AND THAT IS A FINDING RATHER THAN AN OMISSION ─────
+     *
+     * Measured here on 2026-08-10 at a 1600px viewport: `.cf-bar__inner`, `.cf-subnav__inner` and
+     * `main` all land at left = 200, and `.cf-foot__inner` lands at 184. The footer's border box
+     * is 1232px wide against the bar's 1200.
+     *
+     * The cause is in `@cloudsforge/ui`, not here. `.cf-foot__inner` (ui.css) sets
+     * `max-width: var(--cf-max-w)` and `padding: … var(--cf-space-xl) …` and, unlike
+     * `.cf-bar__inner` and `.cf-subnav__inner`, does NOT set `box-sizing: border-box` — and ui.css
+     * carries no global reset for it. So its 1200px is its CONTENT box and the 16px gutter is
+     * added outside, which is the identical 16px-too-wide defect the sub-nav census was run for,
+     * one row further down and in the design system rather than in an app.
+     *
+     * Reported, not fixed: this branch does not touch the `ui` repository. The assertion is left
+     * naming only the three rows this repository is responsible for, so it stays honest, and the
+     * footer can be added to it the day ui.css grows the missing declaration.
+     */
+    const surface = await startSurface()
+    const session = await renderOnlyWithStubbedNetwork(surface.origin, {
+      path: '/',
+      stubs: [portal(true), REDEEM, PORTAL_FAVICON, ...READS],
+      viewport: { width: 1600, height: 900 },
+    })
+    try {
+      await assertMounted(session, { showing: ['Grouped faults'] })
+      /*
+       * Written as one expression with no local helper on purpose. The loader that runs this suite
+       * rewrites a NAMED function — including `const left = (sel) => …` — into a call to esbuild's
+       * `__name` helper, which exists in this process and not in the page, so the evaluate throws
+       * `ReferenceError: __name is not defined` in Chromium. Every other `page.evaluate` in this
+       * repository is a plain expression for the same reason.
+       */
+      const SELECTORS = ['.cf-bar__inner', '.cf-subnav__inner', 'main'] as const
+      const lefts = await session.page.evaluate(
+        (selectors: readonly string[]) =>
+          selectors.map((sel) => {
+            const el = document.querySelector(sel)
+            return el === null ? null : Math.round(el.getBoundingClientRect().left)
+          }),
+        SELECTORS,
+      )
+      const [bar, subnav, main] = lefts
+      assert.notEqual(bar, null, 'no .cf-bar__inner on the page to measure against')
+      assert.equal(subnav, bar, 'the sections do not line up with the bar')
+      assert.equal(main, bar, 'the page content does not line up with the bar')
+    } finally {
+      await session.close()
+    }
+  })
+})
+
 describe('the estate footer', () => {
   it('is under the sign-in wall BEFORE anybody signs in, and hides the operator surfaces', async () => {
     const surface = await startSurface()
