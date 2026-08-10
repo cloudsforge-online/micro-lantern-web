@@ -41,10 +41,11 @@ import {
   MainRegion,
   SkipLink,
   SubNav,
+  miningOnHub,
 } from '@cloudsforge/ui'
 import { applyHead, normalisePath, surfaceMeta } from '@cloudsforge/ui/seo'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
-import { PRODUCT } from '../lib/hosts.ts'
+import { PRODUCT, hosts } from '../lib/hosts.ts'
 import { NAV, ROUTES } from '../lib/routes.ts'
 import { useSession } from '../lib/auth.tsx'
 
@@ -69,11 +70,31 @@ export function AppShell({ unregistered = false }: { unregistered?: boolean }) {
         supplies `id={MAIN_ID}` and `tabIndex={-1}` together, so the two cannot disagree.
       */}
       <SkipLink>Skip to the page</SkipLink>
+      {/*
+        `mining` is the design system's own control, and the bar puts it immediately left of the
+        account menu — the one position it can hold on every surface at once, which is the whole
+        of the change. The owner's report was that starting a browser miner is "hidden deep in
+        mining page"; a control that lands somewhere different on each surface is hidden again.
+
+        WHAT IS PASSED IS THE `elsewhere` STATE, AND IT RENDERS AN ANCHOR. A session is a WebSocket
+        and two Web Workers on `hub.<apex>`. That is a different ORIGIN from this one, so nothing
+        in this bundle can start it, watch it or stop it, and a Start button here would be a
+        control that cannot do what its label says. The link is also the shape that survives:
+        a destination written as an `onClick` cannot be middle-clicked, cannot be opened in a new
+        tab, cannot be copied out of, and is invisible to everything that reads links — which is
+        the same reason the footer below derives real `href`s from the registry rather than
+        handlers.
+
+        `hosts().hub`, never a written-out URL, for the reason the note inside `MainRegion` gives:
+        this bundle is served from localhost, from `lantern.<apex>` and sometimes from an address
+        the registry does not know, and a literal would be right on exactly one of the three.
+      */}
       <CloudsForgeBar
         current={PRODUCT}
         account={account}
         onSignIn={() => signIn()}
         onSignOut={signOut}
+        mining={miningOnHub(hosts().hub)}
       />
       {/*
         The sub-nav is `SubNav` from @cloudsforge/ui and is no longer declared here.
